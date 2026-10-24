@@ -12,7 +12,7 @@ import { loadCalendarInput } from '../../data/calendar'
 import { buildCalendar, toISODate } from '../../domain/calendar'
 import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
 import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
-import { loadProgress, publishCard } from '../../data/progress'
+import { loadProgress, publishCard, refreshCard } from '../../data/progress'
 import { progressGain } from '../../domain/streak'
 import { useAuth } from '../auth/AuthProvider'
 import { periodState } from '../../domain/cycle'
@@ -241,7 +241,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     timer.stop()
     await finishWorkout(workout.id)
     // Carte des amis : seulement si le partage est activé ; un échec sera rattrapé à la séance suivante.
-    if (profile?.share_progress) void publishCard(userId, after).catch(() => {})
+    if (profile?.share_progress) void refreshCard(userId, after, publishCard).catch(() => {})
   }
 
   async function abandon() {

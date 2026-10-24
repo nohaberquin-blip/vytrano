@@ -1,4 +1,4 @@
-import { addDays, weekProgress, weekStart, workoutDate, type CalendarInput } from './calendar'
+import { addDays, weekGoal, weekStart, workoutDate, type CalendarInput } from './calendar'
 import type { Workout } from './types'
 
 export interface Badge { id: string; label: string; hint: string }
@@ -59,17 +59,22 @@ export function progress(workouts: Workout[], input: CalendarInput | null, today
   let streak = 0
   let jokers = 0
   if (input) {
-    const withWorkouts = { ...input, workouts }
+    // Jours d'entraînement distincts par semaine, calculés une seule fois (pas à chaque semaine).
+    const byWeek = new Map<string, string[]>()
+    for (const d of new Set(dates)) {
+      const monday = weekStart(d)
+      byWeek.set(monday, [...(byWeek.get(monday) ?? []), d])
+    }
     const since = input.schedule.since
     let monday = weekStart(since) === since ? since : addDays(weekStart(since), 7)
     let reached = 0
     for (; monday <= weekStart(today); monday = addDays(monday, 7)) {
-      const p = weekProgress(withWorkouts, monday)
-      if (p.goal === 0) continue
-      if (p.reached) {
+      const goal = weekGoal(input, monday)
+      if (goal === 0) continue
+      const days = byWeek.get(monday) ?? []
+      if (days.length >= goal) {
         // Jour où l'objectif a été atteint : le goal-ième jour d'entraînement de la semaine.
-        const days = [...new Set(dates.filter((d) => d >= monday && d <= addDays(monday, 6)))]
-        const date = days[p.goal - 1]
+        const date = days[goal - 1]
         streak++
         reached++
         if (reached % 4 === 0) jokers = Math.min(2, jokers + 1)

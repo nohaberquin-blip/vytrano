@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { loadProgress, setShareProgress } from '../../data/progress'
+import { useEffect, useState } from 'react'
+import { loadProgress, publishCard, refreshCard, setShareProgress } from '../../data/progress'
 import { useLive } from '../../data/useLive'
 import { toISODate } from '../../domain/calendar'
 import { BADGES } from '../../domain/streak'
@@ -16,6 +16,11 @@ export function ProgressCard() {
   const p = useLive(() => loadProgress(userId, toISODate(new Date())), [userId])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const sharing = !!profile?.share_progress
+  // Partage activé : la carte vue par les amis est remise à jour si elle a changé (série perdue, objectif modifié…).
+  useEffect(() => {
+    if (sharing && p) void refreshCard(userId, p, publishCard).catch(() => {})
+  }, [sharing, p, userId])
   if (!p) return null
   const unlocked = new Map(p.badges.map((b) => [b.id, b.date]))
 

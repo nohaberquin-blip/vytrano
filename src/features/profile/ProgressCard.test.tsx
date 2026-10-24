@@ -1,17 +1,20 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { db } from '../../data/db'
-import { setShareProgress } from '../../data/progress'
+import { publishCard, setShareProgress } from '../../data/progress'
 import { WithUser, testProfile } from '../../test/auth'
 import { ProgressCard } from './ProgressCard'
 
 vi.mock('../../data/progress', async (orig) => ({
   ...(await orig<typeof import('../../data/progress')>()),
   setShareProgress: vi.fn().mockResolvedValue({ error: null }),
+  publishCard: vi.fn().mockResolvedValue({ error: null }),
 }))
 
 beforeEach(async () => {
+  localStorage.clear()
   vi.mocked(setShareProgress).mockClear()
+  vi.mocked(publishCard).mockClear()
   await Promise.all(db.tables.map((t) => t.clear()))
 })
 
@@ -46,4 +49,24 @@ test('partage activé : le désactiver retire la carte', async () => {
   expect(toggle).toBeChecked()
   await userEvent.click(toggle)
   expect(setShareProgress).toHaveBeenCalledWith('u', false, expect.anything())
+})
+
+test('partage activé : la carte périmée est republiée à l’ouverture du Profil, une seule fois', async () => {
+  await done('a', '2026-09-01')
+  const profile = { ...testProfile, share_progress: true }
+  const { unmount } = render(<WithUser profile={profile}><ProgressCard /></WithUser>)
+  await screen.findByText('Niveau 1 · Débutant')
+  await vi.waitFor(() => expect(publishCard).toHaveBeenCalledTimes(1))
+  unmount()
+  render(<WithUser profile={profile}><ProgressCard /></WithUser>)
+  await screen.findByText('Niveau 1 · Débutant')
+  await new Promise((r) => setTimeout(r, 50))
+  expect(publishCard).toHaveBeenCalledTimes(1)
+})
+
+test('partage désactivé : rien n’est publié à l’ouverture', async () => {
+  render(<WithUser><ProgressCard /></WithUser>)
+  await screen.findByText('Niveau 1 · Débutant')
+  await new Promise((r) => setTimeout(r, 50))
+  expect(publishCard).not.toHaveBeenCalled()
 })

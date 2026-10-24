@@ -96,11 +96,15 @@ export function buildCalendar(input: CalendarInput, from: string, to: string): C
   return out
 }
 
+/** Objectif de la semaine commençant `monday` : réglé pour cette semaine, sinon le nombre de jours cochés. */
+export const weekGoal = (input: CalendarInput, monday: string) =>
+  input.goals.find((g) => g.week_start === monday)?.sessions ?? input.schedule.weekdays.length
+
 /** Séances faites (jours distincts) dans la semaine commençant `monday`, et objectif. */
 export function weekProgress(input: CalendarInput, monday: string): { done: number; goal: number; reached: boolean } {
   const dates = new Set(input.workouts.map(workoutDate))
   let done = 0
   for (let i = 0; i < 7; i++) if (dates.has(addDays(monday, i))) done++
-  const goal = input.goals.find((g) => g.week_start === monday)?.sessions ?? input.schedule.weekdays.length
+  const goal = weekGoal(input, monday)
   return { done, goal, reached: goal > 0 && done >= goal }
 }

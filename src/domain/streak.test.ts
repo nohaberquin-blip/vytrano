@@ -111,3 +111,13 @@ test('gain de fin de séance : XP, niveau atteint, nouveaux badges', () => {
   expect(big.level).toBe(1)
   expect(progressGain(big, more).level).toBe(2)
 })
+
+test('rapide sur 3 ans d’historique (moins de 15 ms)', () => {
+  const iso = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+  const ws: Workout[] = []
+  for (let i = 0; i < 160; i++) for (const k of [0, 2, 4]) ws.push(w(iso(new Date(2023, 9, 2 + 7 * i + k, 12))))
+  const big = { ...input('2026-10-25'), schedule: { id: 'u', user_id: 'u', weekdays: [1, 3, 5], since: '2023-10-02' } }
+  progress(ws, big, '2026-10-25')
+  const times = [0, 1, 2].map(() => { const t = performance.now(); progress(ws, big, '2026-10-25'); return performance.now() - t }).sort((a, b) => a - b)
+  expect(times[1]).toBeLessThan(15)
+})

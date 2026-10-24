@@ -305,6 +305,22 @@ do $$ begin
 end $$;
 insert into public.progress_cards (user_id, level, title, streak, badges)
   values ('aaaaaaaa-0000-0000-0000-000000000001', 4, 'Débutant', 6, '{sessions-1,sessions-10}');
+-- A ne partage pas (encore) : sa carte, même présente, est invisible et il ne peut pas l'écrire.
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : sans partage, B ne doit pas voir la carte de A'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$ begin
+  begin
+    update progress_cards set streak = 7 where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+    raise exception 'ÉCHEC : sans partage, A ne doit pas pouvoir republier sa carte';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('role', 'postgres', true);
+update public.profiles set share_progress = true where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 select set_config('role', 'authenticated', true),
        set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
 do $$ begin

@@ -24,13 +24,34 @@ export const cardOf = (p: Progress): ProgressCard => ({
   badges: [...p.badges].sort((a, b) => a.date.localeCompare(b.date)).map((b) => b.id),
 })
 
-/** Écrit la carte sur le serveur (partage activé seulement). */
+/** Écrit la carte sur le serveur (partage activé seulement ; le serveur refuse sinon). */
 export async function publishCard(userId: string, p: Progress) {
   return supabase.from('progress_cards').upsert({ user_id: userId, ...cardOf(p), updated_at: new Date().toISOString() })
 }
 
+/** Publie la carte si elle a changé depuis la dernière publication réussie de cet appareil (`publish` : l'envoi, remplaçable). */
+export async function refreshCard(userId: string, p: Progress, publish = publishCard): Promise<void> {
+  if (!cardChanged(userId, p)) return
+  const { error } = await publish(userId, p)
+  if (!error) remember(userId, cardOf(p))
+}
+
 export async function removeCard(userId: string) {
-  return supabase.from('progress_cards').delete().eq('user_id', userId)
+  const res = await supabase.from('progress_cards').delete().eq('user_id', userId)
+  if (!res.error) remember(userId, null)
+  return res
+}
+
+/** Dernière carte publiée depuis cet appareil : on ne republie que ce qui a changé (série tombée à 0…). */
+const cardKey = (userId: string) => `vytrano.card.${userId}`
+function remember(userId: string, card: ProgressCard | null) {
+  try {
+    if (card) localStorage.setItem(cardKey(userId), JSON.stringify(card))
+    else localStorage.removeItem(cardKey(userId))
+  } catch { /* stockage indisponible : la carte sera republiée à chaque fois */ }
+}
+function cardChanged(userId: string, p: Progress): boolean {
+  try { return localStorage.getItem(cardKey(userId)) !== JSON.stringify(cardOf(p)) } catch { return true }
 }
 
 /**
@@ -41,7 +62,9 @@ export async function setShareProgress(userId: string, on: boolean, p: Progress)
   if (on) {
     const { error } = await updateProfile(userId, { share_progress: true })
     if (error) return { error }
-    return { error: (await publishCard(userId, p)).error }
+    const res = await publishCard(userId, p)
+    if (!res.error) remember(userId, cardOf(p))
+    return { error: res.error }
   }
   const { error } = await removeCard(userId)
   if (error) return { error }

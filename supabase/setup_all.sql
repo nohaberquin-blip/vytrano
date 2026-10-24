@@ -692,10 +692,13 @@ create table if not exists public.progress_cards (
   updated_at timestamptz not null default now()
 );
 
--- Comme can_see_workouts : soi-même, ou un ami accepté (is_friend n'est pas appelable directement).
+-- Comme can_see_workouts : soi-même, ou un ami accepté si le propriétaire partage (vérifié par le
+-- serveur : un appareil resté ouvert avec un réglage périmé ne peut pas rendre la carte visible).
 create or replace function public.can_see_progress(owner uuid) returns boolean
 language sql stable security definer set search_path = public as $$
-  select owner = auth.uid() or public.is_friend(auth.uid(), owner)
+  select owner = auth.uid()
+    or (public.is_friend(auth.uid(), owner)
+        and exists (select 1 from profiles p where p.user_id = owner and p.share_progress))
 $$;
 revoke execute on function public.can_see_progress(uuid) from public, anon;
 grant execute on function public.can_see_progress(uuid) to authenticated;
@@ -706,4 +709,6 @@ create policy progress_cards_read on public.progress_cards for select to authent
   using (public.can_see_progress(user_id));
 drop policy if exists progress_cards_write on public.progress_cards;
 create policy progress_cards_write on public.progress_cards for all to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid()
+              and exists (select 1 from public.profiles p where p.user_id = auth.uid() and p.share_progress));
