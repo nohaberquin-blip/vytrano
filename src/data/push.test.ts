@@ -13,7 +13,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 test('programmer une alarme : upsert avec keepalive et le jeton de l’utilisateur', async () => {
-  scheduleRestAlarm('u', Date.UTC(2026, 9, 25, 18, 2, 30), 'Squat · série 3')
+  scheduleRestAlarm('u', Date.UTC(2026, 9, 25, 18, 2, 30), 'Squat · série 3', true)
   await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
   const [url, init] = fetchMock.mock.calls[0]
   expect(url).toBe(`${supabaseUrl}/rest/v1/rest_alarms`)
@@ -23,7 +23,7 @@ test('programmer une alarme : upsert avec keepalive et le jeton de l’utilisate
 })
 
 test('annuler une alarme : DELETE de la ligne de l’utilisateur', async () => {
-  cancelRestAlarm('u')
+  cancelRestAlarm('u', true)
   await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
   const [url, init] = fetchMock.mock.calls[0]
   expect(url).toBe(`${supabaseUrl}/rest/v1/rest_alarms?user_id=eq.u`)
@@ -61,4 +61,10 @@ test('texte de notification limité à 200 caractères', async () => {
   scheduleRestAlarm('u', Date.now(), 'x'.repeat(300))
   await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
   expect(JSON.parse(fetchMock.mock.calls.at(-1)![1].body).body).toHaveLength(200)
+})
+
+test('app ouverte : requête normale, sans keepalive', async () => {
+  scheduleRestAlarm('u', Date.now(), 'x', false)
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+  expect(fetchMock.mock.calls.at(-1)![1].keepalive).toBe(false)
 })
