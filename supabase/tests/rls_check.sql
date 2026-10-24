@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS 001 → 003 et le seed.
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 006 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -143,6 +143,46 @@ do $$ declare new_program uuid; ex_owner uuid; begin
     raise exception 'ÉCHEC : l''import doit réutiliser l''exercice public de A'; end if;
   if (select count(*) from user_exercises where user_id = 'cccccccc-0000-0000-0000-000000000003') <> 1 then
     raise exception 'ÉCHEC : l''import doit créer la fiche de C'; end if;
+end $$;
+
+-- ─── Calendrier : privé (B, ami de A, ne voit ni n'écrit rien) ───
+select set_config('role', 'postgres', true);
+insert into public.training_schedules (id, user_id, weekdays, since)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '{1,3,5}', current_date);
+insert into public.schedule_overrides (user_id, date, kind, moved_to)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', '2026-10-23', 'rest', '2026-10-24');
+insert into public.weekly_goals (user_id, week_start, sessions)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', '2026-10-19', 4);
+do $$ begin
+  begin
+    insert into public.training_schedules (id, user_id, weekdays) values ('bbbbbbbb-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002', '{8}');
+    raise exception 'ÉCHEC : un jour 8 doit être refusé';
+  exception when check_violation then null; end;
+  begin
+    insert into public.weekly_goals (user_id, week_start, sessions) values ('bbbbbbbb-0000-0000-0000-000000000002', '2026-10-20', 3);
+    raise exception 'ÉCHEC : un objectif doit commencer un lundi';
+  exception when check_violation then null; end;
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from training_schedules where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or exists (select 1 from schedule_overrides where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or exists (select 1 from weekly_goals where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit pas voir le calendrier de A'; end if;
+  begin
+    insert into schedule_overrides (user_id, date, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', '2026-10-25', 'train');
+    raise exception 'ÉCHEC : B ne doit pas écrire dans le calendrier de A';
+  exception when insufficient_privilege then null; end;
+  insert into schedule_overrides (user_id, date, kind) values ('bbbbbbbb-0000-0000-0000-000000000002', '2026-10-25', 'train');
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$ begin
+  if not exists (select 1 from schedule_overrides where moved_to = '2026-10-24') then
+    raise exception 'ÉCHEC : A doit voir ses exceptions'; end if;
+  if exists (select 1 from schedule_overrides where user_id <> 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : A ne doit pas voir le calendrier de B'; end if;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
