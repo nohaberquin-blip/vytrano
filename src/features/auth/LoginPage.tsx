@@ -5,7 +5,8 @@ function authErrorMessage(message: string): string {
   if (/invalid login credentials/i.test(message)) return 'Email ou mot de passe incorrect'
   if (/already registered/i.test(message)) return 'Un compte existe déjà avec cet email'
   if (/password should be at least/i.test(message)) return 'Mot de passe : 6 caractères minimum'
-  if (/email not confirmed/i.test(message)) return 'Confirme ton email avec le lien reçu, puis reconnecte-toi'
+  if (/email not confirmed/i.test(message)) return 'Ton email n’est pas encore confirmé : clique sur le lien reçu par email (pense à regarder les spams), puis reconnecte-toi'
+  if (/rate limit/i.test(message)) return 'Trop de tentatives d’envoi d’email. Réessaie dans une heure.'
   if (/fetch/i.test(message)) return 'Pas de connexion internet'
   return message
 }
@@ -25,7 +26,8 @@ export function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(authErrorMessage(error.message))
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      // Le lien de confirmation ramène sur l'adresse d'où l'on s'inscrit (sinon Supabase utilise sa « Site URL »).
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
       if (error) setError(authErrorMessage(error.message))
       else if (!data.session) setInfo('Compte créé. Clique sur le lien reçu par email pour l’activer, puis connecte-toi.')
     }
