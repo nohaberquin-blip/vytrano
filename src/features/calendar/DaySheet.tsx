@@ -135,6 +135,7 @@ function DoneWorkout({ workout }: { workout: Workout }) {
   return (
     <div className="card">
       <p className="card-title">{workout.name}</p>
+      {workout.lightened && <p className="muted small" style={{ margin: '0 0 4px' }}>Séance allégée</p>}
       {rows?.length === 0 && <p className="muted small">Aucune série validée</p>}
       {rows?.map((r) => (
         <p key={r.id} className="small num" style={{ margin: '2px 0' }}>

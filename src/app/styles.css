@@ -289,11 +289,12 @@ a { color: inherit; }
 .time-link { display: block; margin: 10px auto 0; font-size: 15px; }
 .time-limit { margin-top: 12px; }
 .time-choices { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 8px 0 10px; }
-.time-choices button {
+.time-choices button, .lighten-choices button {
   min-height: 44px; padding: 0 2px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 650; white-space: nowrap;
 }
-.time-choices button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.lighten-choices { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 6px; margin: 8px 0 10px; }
+.time-choices button[aria-pressed='true'], .lighten-choices button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .time-changes { margin: 6px 0; padding-left: 18px; }
 .time-changes .removed { text-decoration: line-through; color: var(--muted); }
 .star { font-size: 20px; color: var(--muted); }

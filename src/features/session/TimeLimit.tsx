@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { db } from '../../data/db'
 import { previewWorkout } from '../../data/workouts'
 import { TIME_CHOICES, TIME_MAX, TIME_MIN, type FitResult } from '../../domain/fitTime'
-import type { ProgramDay } from '../../domain/types'
+import type { Lightening, ProgramDay } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
 
 const mins = (seconds: number) => Math.max(1, Math.round(seconds / 60))
@@ -11,7 +11,13 @@ const mins = (seconds: number) => Math.max(1, Math.round(seconds / 60))
  * Option facultative « temps limité » : choix du temps et aperçu de la séance adaptée.
  * `minutes` null = séance complète (rien n'est raccourci).
  */
-export function TimeLimit({ day, minutes, onChange }: { day: ProgramDay; minutes: number | null; onChange(m: number | null): void }) {
+export function TimeLimit({ day, minutes, lightened = null, onChange }: {
+  day: ProgramDay
+  minutes: number | null
+  /** Allègement choisi : appliqué avant le temps, l'aperçu en tient compte. */
+  lightened?: Lightening | null
+  onChange(m: number | null): void
+}) {
   const userId = useUserId()
   const [open, setOpen] = useState(false)
   // Temps libre : la personne tape son propre temps ; les propositions remplissent le champ.
@@ -35,7 +41,7 @@ export function TimeLimit({ day, minutes, onChange }: { day: ProgramDay; minutes
     if (!minutes) return
     let live = true
     void (async () => {
-      const result = await previewWorkout(userId, day, minutes)
+      const result = await previewWorkout(userId, day, minutes, lightened)
       const items = await db.program_day_exercises.bulkGet(result.changes.map((c) => c.key))
       const exercises = await db.exercises.bulkGet(items.map((i) => i?.exercise_id ?? ''))
       const names = new Map(result.changes.map((c, i) => [c.key, exercises[i]?.name ?? '…']))
@@ -44,7 +50,7 @@ export function TimeLimit({ day, minutes, onChange }: { day: ProgramDay; minutes
     return () => { live = false }
   // day.id : l’objet jour est recréé à chaque lecture de la base.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, day.id, minutes])
+  }, [userId, day.id, minutes, lightened])
 
   if (!open) {
     return <button className="link-btn time-link" onClick={() => setOpen(true)}>⏱ Temps limité ?</button>

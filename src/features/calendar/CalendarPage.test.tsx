@@ -210,3 +210,11 @@ test('jour futur : pas de « Début des règles »', async () => {
   await userEvent.click(await screen.findByRole('button', { name: '24 octobre, repos' }))
   expect(within(await screen.findByRole('dialog')).queryByRole('button', { name: 'Début des règles' })).not.toBeInTheDocument()
 })
+
+test('séance allégée terminée : mention dans la fiche du jour', async () => {
+  await seed()
+  await db.workouts.put({ ...(await db.workouts.get('w1'))!, lightened: 'minus10' })
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '19 octobre, fait' }))
+  expect(within(await screen.findByRole('dialog')).getByText('Séance allégée')).toBeInTheDocument()
+})
