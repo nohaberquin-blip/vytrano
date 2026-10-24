@@ -15,8 +15,8 @@ update public.profiles set username = 'rls_lea' where user_id = 'bbbbbbbb-0000-0
 insert into public.friendships (requester_id, addressee_id, status)
   values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'accepted');
 
--- Données de A : un exercice perso, un programme d'un jour, une séance terminée avec une série.
-insert into public.exercises (id, owner_id, name) values ('eeeeeeee-0000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS curl perso');
+-- Données de A : un exercice créé par A, un programme d'un jour, une séance terminée avec une série.
+insert into public.exercises (id, owner_id, name, muscle_group) values ('eeeeeeee-0000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS curl perso', 'Biceps');
 insert into public.programs (id, owner_id, name, is_active) values ('ffffffff-0000-0000-0000-000000000006', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS prog', true);
 insert into public.program_days (id, program_id, position, name) values ('ffffffff-0000-0000-0000-000000000007', 'ffffffff-0000-0000-0000-000000000006', 0, 'Jour 1');
 insert into public.program_day_exercises (id, day_id, exercise_id, position) values ('ffffffff-0000-0000-0000-000000000008', 'ffffffff-0000-0000-0000-000000000007', 'eeeeeeee-0000-0000-0000-000000000005', 0);
@@ -54,6 +54,17 @@ end $$;
 -- ─── C, non ami ───
 select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-000000000003","role":"authenticated"}', true);
 do $$ begin
+  if not exists (select 1 from exercises where id = 'eeeeeeee-0000-0000-0000-000000000005') then
+    raise exception 'ÉCHEC : un exercice créé par A doit être visible par tous'; end if;
+  update exercises set name = 'piraté' where id = 'eeeeeeee-0000-0000-0000-000000000005';
+  delete from exercises where id = 'eeeeeeee-0000-0000-0000-000000000005';
+  if not exists (select 1 from exercises where id = 'eeeeeeee-0000-0000-0000-000000000005' and name = 'RLS curl perso') then
+    raise exception 'ÉCHEC : un exercice ne doit être ni renommé ni supprimé depuis l''app'; end if;
+  begin
+    insert into exercises (owner_id, name, muscle_group) values ('cccccccc-0000-0000-0000-000000000003', 'RLS sans partie', 'Jambes');
+    raise exception 'ÉCHEC : une partie du corps hors liste doit être refusée';
+  exception when check_violation then null; end;
+  insert into exercises (owner_id, name, muscle_group) values ('cccccccc-0000-0000-0000-000000000003', 'RLS mollets C', 'Mollets');
   if exists (select 1 from workouts where id = 'dddddddd-0000-0000-0000-000000000004') then
     raise exception 'ÉCHEC : C (non ami) ne doit pas voir la séance de A'; end if;
   if exists (select 1 from workout_sets where workout_id = 'dddddddd-0000-0000-0000-000000000004') then
@@ -118,15 +129,23 @@ do $$ declare new_program uuid; ex_owner uuid; begin
   select e.owner_id into ex_owner
   from program_day_exercises pde join program_days pd on pd.id = pde.day_id join exercises e on e.id = pde.exercise_id
   where pd.program_id = new_program;
-  if ex_owner is distinct from 'cccccccc-0000-0000-0000-000000000003'::uuid then
-    raise exception 'ÉCHEC : l''exercice perso de A doit être copié chez C'; end if;
+  if ex_owner is distinct from 'aaaaaaaa-0000-0000-0000-000000000001'::uuid then
+    raise exception 'ÉCHEC : l''import doit réutiliser l''exercice public de A'; end if;
   if (select count(*) from user_exercises where user_id = 'cccccccc-0000-0000-0000-000000000003') <> 1 then
     raise exception 'ÉCHEC : l''import doit créer la fiche de C'; end if;
 end $$;
 
--- Nettoyage
+-- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
 select set_config('role', 'postgres', true);
+delete from auth.users where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+do $$ begin
+  if not exists (select 1 from public.exercises where id = 'eeeeeeee-0000-0000-0000-000000000005' and owner_id is null) then
+    raise exception 'ÉCHEC : l''exercice de A doit survivre à la suppression de son compte'; end if;
+end $$;
+
+-- Nettoyage
 delete from auth.users where email like 'rls-%@test.local';
+delete from public.exercises where name like 'RLS %';
 commit;
 
 select 'RLS OK' as resultat;
