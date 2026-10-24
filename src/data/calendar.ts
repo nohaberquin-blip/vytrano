@@ -29,8 +29,24 @@ async function removeOverride(userId: string, date: string) {
   if (existing) await repo.remove('schedule_overrides', existing.id)
 }
 
+/** Exception de report qui pointe vers cette date (la séance y avait été déplacée). */
+const originOf = (userId: string, date: string) =>
+  db.schedule_overrides.where('user_id').equals(userId).filter((o) => o.moved_to === date).first()
+
+/** Retire une séance ajoutée ; si elle venait d'un report, son origine suit (`to`) ou devient un simple repos. */
+async function dropAddedSession(userId: string, existing: ScheduleOverride, to: string | null) {
+  await repo.remove('schedule_overrides', existing.id)
+  const origin = await originOf(userId, existing.date)
+  if (!origin) return
+  if (origin.date === to) await repo.remove('schedule_overrides', origin.id)
+  else await repo.put<ScheduleOverride>('schedule_overrides', { ...origin, moved_to: to })
+}
+
 export async function moveSession(userId: string, from: string, to: string): Promise<void> {
-  await putOverride(userId, from, 'rest', to)
+  const existing = await overrideOn(userId, from)
+  // Séance déjà déplacée ou ajoutée : on la déplace sans créer un second report.
+  if (existing?.kind === 'train') await dropAddedSession(userId, existing, to)
+  else await putOverride(userId, from, 'rest', to)
   await putOverride(userId, to, 'train')
 }
 
@@ -44,7 +60,7 @@ export async function cancelMove(userId: string, from: string): Promise<void> {
 
 export async function setRest(userId: string, date: string): Promise<void> {
   const existing = await overrideOn(userId, date)
-  if (existing?.kind === 'train') await removeOverride(userId, date)
+  if (existing?.kind === 'train') await dropAddedSession(userId, existing, null)
   else await putOverride(userId, date, 'rest')
 }
 

@@ -79,3 +79,28 @@ test('loadCalendarInput : null sans réglage ; séances terminées seulement ; p
   expect(input.days.map((d) => d.name)).toEqual(['Jour A'])
   expect(input.schedule.weekdays).toEqual([1])
 })
+
+test('redéplacer une séance déjà reportée : l’origine suit, pas de faux report', async () => {
+  await moveSession('u', '2026-10-23', '2026-10-24')
+  await moveSession('u', '2026-10-24', '2026-10-25')
+  expect(await overrides()).toMatchObject([
+    { date: '2026-10-23', kind: 'rest', moved_to: '2026-10-25' },
+    { date: '2026-10-25', kind: 'train', moved_to: null },
+  ])
+  await cancelMove('u', '2026-10-23')
+  expect(await overrides()).toEqual([])
+})
+
+test('passer en repos une séance reportée : l’origine devient un simple repos', async () => {
+  await moveSession('u', '2026-10-23', '2026-10-24')
+  await setRest('u', '2026-10-24')
+  expect(await overrides()).toMatchObject([{ date: '2026-10-23', kind: 'rest', moved_to: null }])
+})
+
+test('ramener une séance reportée à sa date d’origine efface le report', async () => {
+  await moveSession('u', '2026-10-23', '2026-10-24')
+  await moveSession('u', '2026-10-24', '2026-10-23')
+  const rows = await overrides()
+  expect(rows.every((o) => o.moved_to !== o.date)).toBe(true)
+  expect(rows.filter((o) => o.kind === 'rest')).toEqual([])
+})
