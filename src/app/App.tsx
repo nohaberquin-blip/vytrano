@@ -19,7 +19,7 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
   return (
     <div className="shell">
       <header className="topbar">
-        <span className="brand">Pumped</span>
+        <span className="brand">Vytrano</span>
         <div className="topbar-right">
           {headerExtra}
           <Link to="/profil" className="topbar-profile" aria-label="Profil">Profil</Link>
@@ -58,7 +58,7 @@ function Gate() {
 function NotConfigured() {
   return (
     <div className="auth">
-      <span className="brand">Pumped</span>
+      <span className="brand">Vytrano</span>
       <h1>Configuration manquante</h1>
       <p className="muted">
         Renseigne <code>VITE_SUPABASE_URL</code> et <code>VITE_SUPABASE_ANON_KEY</code> dans <code>.env.local</code>,

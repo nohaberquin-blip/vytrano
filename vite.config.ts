@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Pumped',
-        short_name: 'Pumped',
+        name: 'Vytrano',
+        short_name: 'Vytrano',
         lang: 'fr',
         display: 'standalone',
         start_url: '/',
