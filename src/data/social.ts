@@ -1,4 +1,5 @@
 import type { Profile } from '../domain/types'
+import type { SetKind } from '../domain/methods'
 import { supabase } from './supabase'
 
 /** Fonctions sociales : appels réseau directs, rien n'est mis en file hors ligne. */
@@ -120,6 +121,6 @@ export async function fetchWorkoutDetail(workoutId: string) {
   return ids.map((id) => ({
     exerciseId: id,
     name: names.get(id) ?? 'Exercice',
-    sets: sets.filter((s) => s.exercise_id === id && s.done).map((s) => ({ reps: s.reps as number, weight: Number(s.weight) })),
+    sets: sets.filter((s) => s.exercise_id === id && s.done).map((s) => ({ reps: s.reps as number, weight: Number(s.weight), kind: (s.kind ?? 'work') as SetKind })),
   }))
 }

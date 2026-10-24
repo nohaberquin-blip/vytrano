@@ -10,6 +10,14 @@ import {
 import { nextDay } from '../../domain/rotation'
 import type { Workout, WorkoutSet } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
+import { METHOD_LABELS, readTemplate } from '../../domain/methods'
+import type { ProgramDayExercise, UserExercise } from '../../domain/types'
+
+/** Nom de la méthode utilisée (celle du jour, sinon celle de la fiche) ; rien pour une fiche classique. */
+function methodLabel(item: ProgramDayExercise | undefined, fiche: UserExercise | undefined): string | undefined {
+  const t = readTemplate(item?.template ?? fiche?.template, { sets: fiche?.sets ?? 3, target_reps: fiche?.target_reps ?? 10 })
+  return t.method === 'classic' ? undefined : METHOD_LABELS[t.method]
+}
 import { ExerciseCard } from './ExerciseCard'
 
 export function SessionPage() {
@@ -64,7 +72,9 @@ function NextWorkout() {
             {rows!.map(({ item, exercise, fiche }) => (
               <li key={item.id} className="list-item" style={{ cursor: 'default' }}>
                 <span>{exercise?.name ?? '…'}</span>
-                <span className="muted small num">{fiche ? `${fiche.sets} × ${fiche.target_reps} · ${show(fiche.current_weight)}` : ''}</span>
+                <span className="muted small num">
+                  {fiche ? `${methodLabel(item, fiche) ?? `${fiche.sets} × ${fiche.target_reps}`} · ${show(fiche.current_weight)}` : ''}
+                </span>
               </li>
             ))}
           </ul>
@@ -114,7 +124,10 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     name: (await db.exercises.get(id))?.name ?? '…',
     last: await lastSetsFor(userId, id),
     fiche: await db.user_exercises.where('exercise_id').equals(id).filter((f) => f.user_id === userId).first(),
-  }))), [userId, exerciseIds.join()])
+    item: workout.program_day_id
+      ? await db.program_day_exercises.where('day_id').equals(workout.program_day_id).filter((d) => d.exercise_id === id).first()
+      : undefined,
+  }))), [userId, exerciseIds.join(), workout.program_day_id])
 
   const remaining = sets.filter((s) => !s.done).length
 
@@ -135,6 +148,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
       <h1>{workout.name}</h1>
       {meta?.map((m) => (
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}
+          methodLabel={methodLabel(m.item, m.fiche)}
           sets={sets.filter((s) => s.exercise_id === m.id)}
           onUpdate={(s) => updateSet(s)} onAddSet={() => addSet(workout.id, m.id)} />
       ))}

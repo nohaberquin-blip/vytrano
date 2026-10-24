@@ -10,6 +10,7 @@ import { useUnit } from '../../app/units'
 import type { Workout } from '../../domain/types'
 import { useAuth, useUserId } from '../auth/AuthProvider'
 import { SettingsSection } from './SettingsSection'
+import { KIND_LABELS, setKind } from '../../domain/methods'
 
 export function ProfilePage() {
   const userId = useUserId()
@@ -85,7 +86,7 @@ function MyWorkoutDetail({ workout, onClose }: { workout: Workout; onClose(): vo
           <p className="card-title">{ex.name}</p>
           {ex.sets.length === 0
             ? <p className="muted small">Aucune série validée</p>
-            : <ul className="list num">{ex.sets.map((s, i) => <li key={s.id} className="small">{i + 1}. {show(s.weight)} × {s.reps}</li>)}</ul>}
+            : <ul className="list num">{ex.sets.map((s, i) => <li key={s.id} className="small">{i + 1}. {setKind(s) !== 'work' && <span className={`tag tag-${setKind(s)}`}>{KIND_LABELS[setKind(s)]}</span>} {show(s.weight)} × {s.reps}</li>)}</ul>}
         </div>
       ))}
     </Sheet>

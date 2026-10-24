@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { fetchWorkoutDetail, type FeedEntry } from '../../data/social'
+import { KIND_LABELS } from '../../domain/methods'
 
 type Detail = Awaited<ReturnType<typeof fetchWorkoutDetail>>
 
@@ -26,7 +27,7 @@ export function WorkoutDetail({ entry, onClose }: { entry: FeedEntry; onClose():
           {ex.sets.length === 0
             ? <p className="muted small">Aucune série validée</p>
             : <ul className="list num">
-                {ex.sets.map((s, i) => <li key={i} className="small">{i + 1}. {show(s.weight)} × {s.reps}</li>)}
+                {ex.sets.map((s, i) => <li key={i} className="small">{i + 1}. {s.kind !== 'work' && <span className={`tag tag-${s.kind}`}>{KIND_LABELS[s.kind]}</span>} {show(s.weight)} × {s.reps}</li>)}
               </ul>}
         </div>
       ))}
