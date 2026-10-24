@@ -259,3 +259,21 @@ a { color: inherit; }
 .weight-chart .label { fill: var(--muted); font-size: 10px; }
 .weight-chart .avg { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .weight-chart .dot { fill: var(--planned); opacity: 0.75; }
+
+/* ─── Barre de repos ─── */
+.rest-bar {
+  position: fixed; left: 8px; right: 8px; z-index: 15;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px);
+  max-width: 624px; margin: 0 auto; padding: 10px 14px 12px; border-radius: 16px;
+  background: var(--text); color: var(--bg); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+.rest-bar.done { background: var(--ok); color: #fff; }
+.rest-progress { height: 4px; border-radius: 999px; background: rgba(127, 127, 127, 0.35); overflow: hidden; margin-bottom: 6px; }
+.rest-progress span { display: block; height: 100%; background: var(--accent); transition: width 0.25s linear; }
+.rest-time { font-size: 32px; font-weight: 750; margin: 0; letter-spacing: -0.02em; }
+.rest-over { font-size: 18px; font-weight: 600; opacity: 0.85; }
+.rest-next { margin: 0; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rest-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.rest-bar .btn { background: rgba(127, 127, 127, 0.22); color: inherit; border-color: transparent; padding: 0 4px; white-space: nowrap; }
+/* La barre ne doit pas cacher le bas de la séance. */
+.shell:has(.rest-bar) .content { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 170px); }

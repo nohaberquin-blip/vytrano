@@ -16,9 +16,11 @@ import type { ReactNode } from 'react'
 import { UnitContext } from './units'
 import { SyncBadge } from './SyncBadge'
 import { useIncomingRequests } from '../features/friends/useIncomingRequests'
+import { GlobalRestBar, RestProvider } from '../features/session/RestProvider'
 
 export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; badges?: Record<string, number> }) {
   return (
+    <RestProvider>
     <div className="shell">
       <header className="topbar">
         <span className="brand">Vytrano</span>
@@ -38,8 +40,10 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <GlobalRestBar />
       <TabBar badges={badges} />
     </div>
+    </RestProvider>
   )
 }
 

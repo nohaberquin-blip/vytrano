@@ -52,3 +52,22 @@ test('méthode invalide → bouton désactivé', async () => {
   for (const n of [1, 2, 3, 4]) await userEvent.selectOptions(screen.getByLabelText(`Type série ${n}`), 'warmup')
   expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
 })
+
+test('repos de base : 2:30 → 150 s ; vide → auto ; hors bornes refusé', async () => {
+  const { save } = setup()
+  const repos = screen.getByLabelText('Repos de base')
+  expect(repos).toHaveAttribute('inputmode', 'text') // le clavier numérique de l'iPhone n'a pas « : »
+  await userEvent.type(repos, '5')
+  expect(screen.getByText('Repos : 0:10 à 10:00')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+  await userEvent.clear(repos)
+  await userEvent.type(repos, '2:30')
+  await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+  expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ rest_seconds: 150 }))
+})
+
+test('repos de base vide : null (auto)', async () => {
+  const { save } = setup()
+  await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+  expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ rest_seconds: null }))
+})

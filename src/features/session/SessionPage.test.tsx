@@ -1,13 +1,19 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { db } from '../../data/db'
 import { saveWeekdays } from '../../data/calendar'
 import { addDay, addDayExercise, createProgram } from '../../data/programs'
+import { startWorkout } from '../../data/workouts'
 import { WithUser } from '../../test/auth'
 import { SessionPage } from './SessionPage'
+import { GlobalRestBar, RestProvider } from './RestProvider'
+
+vi.mock('./beep', () => ({ playBeeps: vi.fn(), unlockAudio: vi.fn() }))
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
+  localStorage.clear()
   await Promise.all(db.tables.map((t) => t.clear()))
   const p = await createProgram('u', 'Prog')
   const day = await addDay(p.id, 'Jour A')
@@ -16,7 +22,7 @@ beforeEach(async () => {
 })
 afterEach(() => vi.useRealTimers())
 
-const renderPage = () => render(<MemoryRouter><WithUser><SessionPage /></WithUser></MemoryRouter>)
+const renderPage = () => render(<MemoryRouter><WithUser><RestProvider><SessionPage /><GlobalRestBar /></RestProvider></WithUser></MemoryRouter>)
 
 test('jour de repos : mention affichée, on peut toujours commencer', async () => {
   vi.setSystemTime(new Date(2026, 9, 20, 10)) // mardi
@@ -39,4 +45,40 @@ test('sans calendrier réglé : pas de mention', async () => {
   renderPage()
   expect(await screen.findByRole('button', { name: 'Commencer' })).toBeInTheDocument()
   expect(screen.queryByText("Jour de repos aujourd'hui")).toBeNull()
+})
+
+test('valider une série démarre le repos ; annuler la validation l’arrête', async () => {
+  vi.setSystemTime(new Date(2026, 9, 21, 10))
+  const day = (await db.program_days.toArray())[0]
+  await startWorkout('u', day)
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 1' }))
+  const bar = await screen.findByRole('timer', { name: 'Repos' })
+  expect(bar).toHaveTextContent('2:00')
+  expect(bar).toHaveTextContent('Ensuite : Squat · série 2 · 0 kg × 10')
+  await userEvent.click(await screen.findByRole('button', { name: 'Annuler la série 1' }))
+  await waitFor(() => expect(screen.queryByRole('timer')).toBeNull())
+})
+
+test('repos automatique désactivé : pas de minuteur', async () => {
+  vi.setSystemTime(new Date(2026, 9, 21, 10))
+  localStorage.setItem('vytrano.rest.settings', JSON.stringify({ auto: false }))
+  const day = (await db.program_days.toArray())[0]
+  await startWorkout('u', day)
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 1' }))
+  await screen.findByRole('button', { name: 'Annuler la série 1' })
+  expect(screen.queryByRole('timer')).toBeNull()
+})
+
+test('valider la dernière série arrête le repos en cours', async () => {
+  vi.setSystemTime(new Date(2026, 9, 21, 10))
+  const day = (await db.program_days.toArray())[0]
+  await startWorkout('u', day)
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 1' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 2' }))
+  await waitFor(() => expect(screen.getByRole('timer')).toHaveTextContent('Ensuite : Squat · série 3'))
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 3' }))
+  await waitFor(() => expect(screen.queryByRole('timer')).toBeNull())
 })

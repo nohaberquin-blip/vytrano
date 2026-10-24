@@ -6,6 +6,7 @@ import { WeightInput } from './WeightInput'
 import { ExerciseHistory } from './ExerciseHistory'
 import { MethodEditor } from './MethodEditor'
 import { readTemplate, templateError, type SetTemplate } from '../../domain/methods'
+import { baseRest, formatClock, parseClock } from '../../domain/rest'
 
 export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
   exercise: Exercise
@@ -20,16 +21,19 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
   const [rounding, setRounding] = useState<number | null>(toDisplay(fiche.rounding ?? 2.5))
   const [auto, setAuto] = useState(fiche.auto_progression !== false)
   const [template, setTemplate] = useState<SetTemplate>(() => readTemplate(fiche.template, fiche))
+  const [restText, setRestText] = useState(fiche.rest_seconds ? formatClock(fiche.rest_seconds) : '')
+  const rest = parseClock(restText)
+  const restError = rest !== null && (Number.isNaN(rest) || rest < 10 || rest > 600)
 
   const methodError = templateError(template)
-  const valid = weight !== null && increment !== null && rounding !== null && rounding > 0 && !methodError
+  const valid = weight !== null && increment !== null && rounding !== null && rounding > 0 && !methodError && !restError
 
   async function submit() {
     if (!valid) return
     await save({
       ...fiche,
       current_weight: toKg(weight!), increment: toKg(increment!), rounding: toKg(rounding!),
-      auto_progression: auto, template,
+      auto_progression: auto, template, rest_seconds: rest,
     })
     onClose()
   }
@@ -50,6 +54,11 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
       {weight === null && <p className="error">Charge invalide</p>}
       {increment === null && <p className="error">Palier invalide</p>}
       {(rounding === null || rounding <= 0) && <p className="error">Arrondi invalide</p>}
+      <label className="field"><span>Repos de base</span>
+        <input aria-label="Repos de base" className="input num" inputMode="text" value={restText}
+          placeholder={`Auto (${formatClock(baseRest(fiche.target_reps))} selon les reps)`} onChange={(e) => setRestText(e.target.value)} />
+      </label>
+      {restError && <p className="error">Repos : 0:10 à 10:00</p>}
       <label className="switch">
         <span>Progression automatique</span>
         <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />

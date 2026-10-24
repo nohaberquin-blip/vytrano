@@ -12,6 +12,7 @@ import { useAuth, useUserId } from '../auth/AuthProvider'
 import { SettingsSection } from './SettingsSection'
 import { NeedsCard } from './NeedsCard'
 import { WeightCard } from './WeightCard'
+import { RestSettingsSection } from './RestSettingsSection'
 import { KIND_LABELS, setKind } from '../../domain/methods'
 
 export function ProfilePage() {
@@ -61,6 +62,7 @@ export function ProfilePage() {
         ))}
       </ul>
 
+      <RestSettingsSection />
       {profile && (
         <SettingsSection key={profile.username} profile={profile} pending={pending}
           update={async (changes) => {

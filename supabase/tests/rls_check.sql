@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 007 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -215,6 +215,35 @@ do $$ begin
     insert into weight_entries (id, user_id, date, weight_kg) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-24', 80);
     raise exception 'ÉCHEC : B ne doit pas écrire les pesées de A';
   exception when insufficient_privilege then null; end;
+end $$;
+
+-- ─── Repos de base : bornes ───
+select set_config('role', 'postgres', true);
+do $$ begin
+  begin
+    insert into public.user_exercises (id, user_id, exercise_id, rest_seconds)
+      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000005', 5);
+    raise exception 'ÉCHEC : un repos de 5 s doit être refusé';
+  exception when check_violation then null; end;
+end $$;
+
+-- ─── Alertes de repos : privées ; envoi réservé au serveur ───
+select set_config('role', 'postgres', true);
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 'https://push.test/rls-a', 'k', 'a');
+insert into public.rest_alarms (user_id, fire_at, title, body)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', now() + interval '1 hour', 'Repos terminé', 'RLS');
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from push_subscriptions where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or exists (select 1 from rest_alarms where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit pas voir les alertes de A'; end if;
+  begin
+    perform public.take_due_rest_alarms();
+    raise exception 'ÉCHEC : un utilisateur ne doit pas pouvoir vider les alarmes';
+  exception when insufficient_privilege then null; end;
+  insert into rest_alarms (user_id, fire_at, title) values ('bbbbbbbb-0000-0000-0000-000000000002', now(), 'Repos terminé');
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
