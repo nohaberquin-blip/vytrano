@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 006 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 007 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -183,6 +183,38 @@ do $$ begin
     raise exception 'ÉCHEC : A doit voir ses exceptions'; end if;
   if exists (select 1 from schedule_overrides where user_id <> 'aaaaaaaa-0000-0000-0000-000000000001') then
     raise exception 'ÉCHEC : A ne doit pas voir le calendrier de B'; end if;
+end $$;
+
+-- ─── Fiche et pesées : privées ───
+select set_config('role', 'postgres', true);
+insert into public.body_profiles (id, user_id, sex, height_cm, goal)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'male', 180, 'cut');
+insert into public.weight_entries (id, user_id, date, weight_kg)
+  values ('abababab-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-25', 75.4);
+do $$ begin
+  begin
+    insert into public.body_profiles (id, user_id, height_cm) values ('bbbbbbbb-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002', 300);
+    raise exception 'ÉCHEC : une taille de 300 cm doit être refusée';
+  exception when check_violation then null; end;
+  begin
+    insert into public.body_profiles (id, user_id, fat_pct) values ('bbbbbbbb-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002', 50);
+    raise exception 'ÉCHEC : 50 % de lipides doit être refusé';
+  exception when check_violation then null; end;
+  begin
+    insert into public.weight_entries (id, user_id, date, weight_kg) values (gen_random_uuid(), 'bbbbbbbb-0000-0000-0000-000000000002', '2026-10-25', 20);
+    raise exception 'ÉCHEC : un poids de 20 kg doit être refusé';
+  exception when check_violation then null; end;
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from body_profiles where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or exists (select 1 from weight_entries where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit pas voir la fiche ni les pesées de A'; end if;
+  begin
+    insert into weight_entries (id, user_id, date, weight_kg) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-24', 80);
+    raise exception 'ÉCHEC : B ne doit pas écrire les pesées de A';
+  exception when insufficient_privilege then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
