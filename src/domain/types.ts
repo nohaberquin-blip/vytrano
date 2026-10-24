@@ -7,6 +7,8 @@ export interface Profile {
   username: string
   display_name: string | null
   share_workouts: boolean
+  /** Niveau, série et badges visibles par les amis (désactivé par défaut). */
+  share_progress?: boolean
   unit: Unit
 }
 

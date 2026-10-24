@@ -36,7 +36,7 @@ function cacheProfile(p: Profile | null) {
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
-    .from('profiles').select('user_id, username, display_name, share_workouts, unit').eq('user_id', userId).maybeSingle()
+    .from('profiles').select('user_id, username, display_name, share_workouts, share_progress, unit').eq('user_id', userId).maybeSingle()
   if (error) return cachedProfile()
   cacheProfile(data as Profile | null)
   return data as Profile | null
