@@ -209,6 +209,7 @@ a { color: inherit; }
 .period-mark { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--period); flex: none; }
 .period-predicted .period-mark, .period-mark.predicted { opacity: 0.4; }
 .cal-row .period-mark { margin-left: auto; }
+.period-card { margin-top: 12px; }
 .cal-legend { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; }
 .cal-legend .period-mark + * { margin-right: 8px; }
 .cal-progress { text-align: center; font-size: 13px; font-weight: 650; color: var(--muted); }
