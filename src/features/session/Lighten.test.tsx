@@ -74,8 +74,11 @@ test('Commencer avec « Moins de séries » : séance allégée, 2 séries par e
   await userEvent.click(screen.getByRole('button', { name: 'Moins de séries' }))
   await userEvent.click(screen.getByRole('button', { name: 'Commencer' }))
   await screen.findByRole('button', { name: 'Terminer la séance' })
-  expect(screen.getByText('Séance allégée')).toBeInTheDocument()
+  expect(await screen.findByText('Séance allégée')).toBeInTheDocument()
   const w = (await db.workouts.toArray())[0]
-  expect(w.lightened).toBe('fewer')
+  expect((await db.workout_lightenings.get(w.id))?.mode).toBe('fewer')
   await waitFor(async () => expect(await db.workout_sets.where('workout_id').equals(w.id).count()).toBe(4))
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  await userEvent.click(screen.getByRole('button', { name: 'Terminer la séance' }))
+  expect(await screen.findByText('Séance allégée enregistrée 🌸 Tes charges habituelles ne changent pas.')).toBeInTheDocument()
 })

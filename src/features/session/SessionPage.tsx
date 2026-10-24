@@ -11,7 +11,7 @@ import { nextDay } from '../../domain/rotation'
 import { loadCalendarInput } from '../../data/calendar'
 import { buildCalendar, toISODate } from '../../domain/calendar'
 import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
-import { isFemale, listPeriods } from '../../data/cycle'
+import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
 import { periodState } from '../../domain/cycle'
 import { useUserId } from '../auth/AuthProvider'
 import { METHOD_LABELS, readTemplate, templateSummary } from '../../domain/methods'
@@ -80,7 +80,13 @@ function NextWorkout() {
   const { tree, day, rows, restDay, periodDay } = data
   return (
     <section className="page">
-      {justFinished && <div className="banner">Séance enregistrée 💪 Les charges ont été mises à jour.</div>}
+      {justFinished && (
+        <div className="banner">
+          {justFinished === 'light'
+            ? 'Séance allégée enregistrée 🌸 Tes charges habituelles ne changent pas.'
+            : 'Séance enregistrée 💪 Les charges ont été mises à jour.'}
+        </div>
+      )}
       <p className="muted small" style={{ margin: 0 }}>{tree.program.name}</p>
       <h1>{day ? day.name : 'Séance'}</h1>
       {restDay && <p className="muted">Jour de repos aujourd'hui</p>}
@@ -140,6 +146,7 @@ function useElapsed(since: string) {
 function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[] }) {
   const userId = useUserId()
   const minutes = useElapsed(workout.started_at)
+  const lightened = useLive(() => showsLightened(userId, workout.id), [userId, workout.id])
   const exerciseIds = [...new Set(sets.map((s) => s.exercise_id))]
   const meta = useLive(async () => Promise.all(exerciseIds.map(async (id) => ({
     id,
@@ -195,7 +202,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   async function finish() {
     if (remaining > 0 && !confirm(`${remaining} série${remaining > 1 ? 's' : ''} non validée${remaining > 1 ? 's' : ''}. Terminer quand même ?`)) return
     // Posé avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
-    sessionStorage.setItem('muscu.finished', '1')
+    sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)
   }
@@ -210,7 +217,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     <section className="page">
       <p className="muted small num" style={{ margin: 0 }}>En cours · {minutes} min</p>
       <h1>{workout.name}</h1>
-      {workout.lightened ? <p className="muted small" style={{ marginTop: -8 }}>Séance allégée</p> : null}
+      {lightened ? <p className="muted small" style={{ marginTop: -8 }}>Séance allégée</p> : null}
       {workout.time_limit ? <p className="muted small" style={{ marginTop: -8 }}>Séance adaptée à {workout.time_limit} min</p> : null}
       {meta?.map((m) => (
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}

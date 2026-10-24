@@ -211,10 +211,18 @@ test('jour futur : pas de « Début des règles »', async () => {
   expect(within(await screen.findByRole('dialog')).queryByRole('button', { name: 'Début des règles' })).not.toBeInTheDocument()
 })
 
-test('séance allégée terminée : mention dans la fiche du jour', async () => {
+test('séance allégée terminée : mention dans la fiche du jour, profil « Femme » seulement', async () => {
   await seed()
-  await db.workouts.put({ ...(await db.workouts.get('w1'))!, lightened: 'minus10' })
+  await db.workout_lightenings.put({ id: 'w1', user_id: 'u', mode: 'minus10' })
+  await saveBodyProfile('u', { sex: 'female' })
+  const { unmount } = renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '19 octobre, fait' }))
+  expect(await within(await screen.findByRole('dialog')).findByText('Séance allégée')).toBeInTheDocument()
+  unmount()
+  await saveBodyProfile('u', { sex: 'unspecified' })
   renderPage()
   await userEvent.click(await screen.findByRole('button', { name: '19 octobre, fait' }))
-  expect(within(await screen.findByRole('dialog')).getByText('Séance allégée')).toBeInTheDocument()
+  const sheet = await screen.findByRole('dialog')
+  expect(await within(sheet).findByText('Aucune série validée')).toBeInTheDocument()
+  expect(within(sheet).queryByText('Séance allégée')).not.toBeInTheDocument()
 })

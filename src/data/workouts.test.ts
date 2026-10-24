@@ -162,13 +162,16 @@ test('aperçu : rien n’est écrit ; un exercice prioritaire est gardé', async
 test('séance allégée −10 % : charges réduites, allègement enregistré ; combinable avec le temps', async () => {
   const day = await bigDay()
   const light = await startWorkout('u', day, null, 'minus10')
-  expect(light.lightened).toBe('minus10')
+  expect((await db.workout_lightenings.get(light.id))?.mode).toBe('minus10')
+  // Privé : la séance (lisible par les amis) ne porte pas l'allègement.
+  const pushed = (await db.outbox.where('table').equals('workouts').toArray()).find((e) => e.key === light.id)!
+  expect(pushed.row).not.toHaveProperty('lightened')
   const sets = await db.workout_sets.where('workout_id').equals(light.id).toArray()
   expect(sets).toHaveLength(24)
   expect(new Set(sets.map((s) => s.weight))).toEqual(new Set([55]))
   await abandonWorkout(light.id)
   const both = await startWorkout('u', day, 20, 'fewer')
-  expect(both.lightened).toBe('fewer')
+  expect((await db.workout_lightenings.get(both.id))?.mode).toBe('fewer')
   expect(both.time_limit).toBe(20)
   expect(await db.workout_sets.where('workout_id').equals(both.id).count()).toBeLessThan(12)
 })
@@ -186,4 +189,19 @@ test('séance allégée réussie : charge inchangée ; la suivante repart de la 
   expect(last.every((s) => s.workout_id === normal.id)).toBe(true)
   expect(last.map((s) => s.reps)).toEqual([5, 5, 5, 5])
   expect((await lastSetsFor('u', 'squat')).every((s) => s.workout_id === normal.id)).toBe(true)
+})
+
+test('allègement qui ne change rien : séance normale, rien d’enregistré', async () => {
+  const day = await setupDay(60)
+  const f = (await db.user_exercises.where('exercise_id').equals('squat').first())!
+  await db.user_exercises.put({ ...f, sets: 2 })
+  const w = await startWorkout('u', day, null, 'fewer')
+  expect(await db.workout_lightenings.get(w.id)).toBeUndefined()
+})
+
+test('abandon d’une séance allégée : l’allègement disparaît aussi', async () => {
+  const day = await setupDay(60)
+  const w = await startWorkout('u', day, null, 'minus10')
+  await abandonWorkout(w.id)
+  expect(await db.workout_lightenings.get(w.id)).toBeUndefined()
 })

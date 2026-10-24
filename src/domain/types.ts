@@ -78,8 +78,6 @@ export interface Workout {
   status: WorkoutStatus
   /** Temps disponible choisi (minutes) ; absent = séance complète. */
   time_limit?: number | null
-  /** Séance allégée (jour de règles) ; neutre pour la progression. */
-  lightened?: Lightening | null
   updated_at?: string
 }
 
@@ -166,6 +164,14 @@ export interface Period {
   user_id: string
   start: string
   days: number
+  updated_at?: string
+}
+
+/** Séance allégée (privée, contrairement à la séance que les amis peuvent voir) ; id = id de la séance. */
+export interface WorkoutLightening {
+  id: string
+  user_id: string
+  mode: Lightening
   updated_at?: string
 }
 

@@ -42,3 +42,11 @@ test('changements : charge de la 1re série de travail et nombre de séries, exe
   ])
   expect(lightenChanges(day, lighten(day, 'fewer', fiches))).toEqual([{ key: 'A', fromKg: 60, toKg: 60, from: 5, to: 3 }])
 })
+
+test('l’arrondi ne peut pas annuler l’allègement : au moins un palier de moins', () => {
+  const day = [ex('A', ['work'], 10), ex('B', ['work'], 1)]
+  const r = lighten(day, 'minus10', new Map([['A', { rounding: 2.5 }], ['B', { rounding: 2.5 }]]))
+  expect(r[0].sets[0].weight).toBe(7.5)
+  expect(r[1].sets[0].weight).toBe(0)
+  expect(lighten([ex('C', ['work'], 12.5)], 'minus20', new Map([['C', { rounding: 2.5 }]]))[0].sets[0].weight).toBe(10)
+})

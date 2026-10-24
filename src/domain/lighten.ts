@@ -1,5 +1,5 @@
 import { keepUnits, type FitExercise } from './fitTime'
-import { COUNTING_KINDS, roundTo, setKind } from './methods'
+import { COUNTING_KINDS, DEFAULT_ROUNDING, roundTo, setKind } from './methods'
 import type { Lightening, UserExercise } from './types'
 
 const FACTOR: Record<'minus10' | 'minus20', number> = { minus10: 0.9, minus20: 0.8 }
@@ -9,8 +9,15 @@ export function lighten(exercises: FitExercise[], mode: Lightening, fiches: Map<
   if (mode === 'fewer') return exercises.map((e) => ({ ...e, sets: keepUnits(e.sets, 2) }))
   return exercises.map((e) => ({
     ...e,
-    sets: e.sets.map((s) => ({ ...s, weight: s.weight > 0 ? roundTo(s.weight * FACTOR[mode], fiches.get(e.exerciseId)?.rounding) : s.weight })),
+    sets: e.sets.map((s) => ({ ...s, weight: lighter(s.weight, FACTOR[mode], fiches.get(e.exerciseId)?.rounding) })),
   }))
+}
+
+/** Charge réduite et arrondie au pas, mais toujours au moins un pas plus bas (sinon l'arrondi annulerait l'allègement). */
+function lighter(weight: number, factor: number, rounding: number | undefined): number {
+  if (weight <= 0) return weight
+  const reduced = roundTo(weight * factor, rounding)
+  return reduced < weight ? reduced : Math.max(0, roundTo(weight - (rounding && rounding > 0 ? rounding : DEFAULT_ROUNDING), rounding))
 }
 
 export interface LightenChange { key: string; fromKg: number; toKg: number; from: number; to: number }

@@ -27,3 +27,8 @@ export const removePeriod = (id: string) => repo.remove('periods', id)
 export async function isFemale(userId: string): Promise<boolean> {
   return (await getBodyProfile(userId))?.sex === 'female'
 }
+
+/** Séance allégée, affichée seulement pour un profil « Femme ». */
+export async function showsLightened(userId: string, workoutId: string): Promise<boolean> {
+  return !!(await db.workout_lightenings.get(workoutId)) && isFemale(userId)
+}

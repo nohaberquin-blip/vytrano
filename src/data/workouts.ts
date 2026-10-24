@@ -2,7 +2,7 @@ import { buildWorkoutSets } from '../domain/buildWorkout'
 import { fitToTime, type FitExercise, type FitResult } from '../domain/fitTime'
 import { lighten, lightenChanges, type LightenChange } from '../domain/lighten'
 import { nextWeight } from '../domain/progression'
-import type { Lightening, ProgramDay, Workout, WorkoutSet } from '../domain/types'
+import type { Lightening, ProgramDay, Workout, WorkoutLightening, WorkoutSet } from '../domain/types'
 import { db } from './db'
 import { ensureFiche, repo } from './repo'
 
@@ -51,7 +51,10 @@ async function planWorkout(userId: string, day: ProgramDay, workoutId: string) {
 /** Séries prévues, allégées si demandé. */
 async function plannedExercises(userId: string, day: ProgramDay, workoutId: string, lightened: Lightening | null) {
   const { exercises, fiches } = await planWorkout(userId, day, workoutId)
-  return { exercises: lightened ? lighten(exercises, lightened, fiches) : exercises, fiches }
+  const light = lightened ? lighten(exercises, lightened, fiches) : exercises
+  // Un allègement qui ne change rien n'en est pas un : la séance reste normale (et compte pour la progression).
+  const changed = !!lightened && lightenChanges(exercises, light).length > 0
+  return { exercises: changed ? light : exercises, fiches, lightened: changed ? lightened : null }
 }
 
 /** Ce que donnerait la séance avec `minutes` disponibles (rien n'est enregistré). */
@@ -68,15 +71,16 @@ export async function previewLighten(userId: string, day: ProgramDay, mode: Ligh
 
 async function createWorkout(userId: string, day: ProgramDay, minutes: number | null, lightened: Lightening | null): Promise<Workout> {
   const id = crypto.randomUUID()
-  const { exercises, fiches } = await plannedExercises(userId, day, id, lightened)
+  const { exercises, fiches, lightened: applied } = await plannedExercises(userId, day, id, lightened)
   const fit = minutes ? fitToTime(exercises, fiches, minutes) : null
   // time_limit seulement si la séance a vraiment été raccourcie.
   const workout = await repo.put<Workout>('workouts', {
     id, user_id: userId, program_day_id: day.id, name: day.name,
     started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
     ...(fit?.changed ? { time_limit: minutes } : {}),
-    ...(lightened ? { lightened } : {}),
   })
+  // Allègement dans une table privée : les amis voient la séance, pas un indice sur les règles.
+  if (applied) await repo.put<WorkoutLightening>('workout_lightenings', { id, user_id: userId, mode: applied })
   let position = 0
   for (const s of (fit?.exercises ?? exercises).flatMap((e) => e.sets)) await repo.put('workout_sets', { ...s, position: position++ })
   return workout
@@ -111,7 +115,7 @@ async function applyFinish(workoutId: string): Promise<void> {
   const sets = await setsOf(workoutId)
   await repo.put('workouts', { ...workout, status: 'done', finished_at: new Date().toISOString() })
   // Séance allégée : neutre pour la progression.
-  if (workout.lightened) return
+  if (await db.workout_lightenings.get(workoutId)) return
   for (const exerciseId of new Set(sets.map((s) => s.exercise_id))) {
     const fiche = await ensureFiche(workout.user_id, exerciseId)
     const weight = nextWeight(fiche, sets.filter((s) => s.exercise_id === exerciseId))
@@ -123,6 +127,7 @@ export async function abandonWorkout(workoutId: string): Promise<void> {
   // Le serveur supprime les séries en cascade.
   await db.workout_sets.where('workout_id').equals(workoutId).delete()
   await repo.remove('workouts', workoutId)
+  if (await db.workout_lightenings.get(workoutId)) await repo.remove('workout_lightenings', workoutId)
 }
 
 /**
@@ -134,10 +139,13 @@ export async function exerciseHistory(userId: string, exerciseId: string, limit:
   const byWorkout = new Map<string, WorkoutSet[]>()
   for (const s of sets) byWorkout.set(s.workout_id, [...(byWorkout.get(s.workout_id) ?? []), s])
   const workouts = (await db.workouts.bulkGet([...byWorkout.keys()]))
-    .filter((w): w is Workout => !!w && w.status === 'done' && w.user_id === userId && !(normalOnly && w.lightened))
+    .filter((w): w is Workout => !!w && w.status === 'done' && w.user_id === userId)
+  const light = new Set((await db.workout_lightenings.bulkGet(workouts.map((w) => w.id))).filter((l) => l).map((l) => l!.id))
+  return workouts
+    .filter((w) => !(normalOnly && light.has(w.id)))
     .sort((a, b) => (b.finished_at ?? '').localeCompare(a.finished_at ?? ''))
     .slice(0, limit)
-  return workouts.map((w) => ({ workout: w, sets: byWorkout.get(w.id)!.sort(byPosition) }))
+    .map((w) => ({ workout: w, sets: byWorkout.get(w.id)!.sort(byPosition), lightened: light.has(w.id) }))
 }
 
 /**
