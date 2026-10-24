@@ -5,7 +5,7 @@ import { toISODate } from '../../domain/calendar'
 import { DEFAULT_FAT_PCT, GOALS, computeNeeds } from '../../domain/needs'
 import type { BodyProfile } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
-import { fmtInt, parseNumber, rangeError } from './numberField'
+import { fmtInt, intRangeError, parseNumber, rangeError } from './numberField'
 
 const show = (n: number | null) => (n === null ? '' : String(n).replace('.', ','))
 
@@ -18,9 +18,9 @@ export function AdjustSheet({ profile, weightKg, onClose }: { profile: BodyProfi
 
   const values = { kcal_override: parseNumber(kcal), protein_per_kg: parseNumber(protein), fat_pct: parseNumber(fat) }
   const errors = [
-    rangeError(values.kcal_override, 1000, 6000, 'Calories : 1 000 à 6 000'),
+    intRangeError(values.kcal_override, 1000, 6000, 'Calories : nombre entier de 1 000 à 6 000'),
     rangeError(values.protein_per_kg, 1, 3, 'Protéines : 1 à 3 g/kg'),
-    rangeError(values.fat_pct, 15, 40, 'Lipides : 15 à 40 %'),
+    intRangeError(values.fat_pct, 15, 40, 'Lipides : nombre entier de 15 à 40 %'),
   ].filter(Boolean)
   const base = profile ?? { id: userId, user_id: userId, sex: null, birth_date: null, height_cm: null, activity: null, sessions_per_week: null, goal: null, kcal_override: null, protein_per_kg: null, fat_pct: null }
   const preview = errors.length ? null : computeNeeds({ ...base, ...values }, weightKg, toISODate(new Date()))

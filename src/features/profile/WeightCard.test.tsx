@@ -39,11 +39,17 @@ test('sans pesée : invitation ; ajout d’une pesée', async () => {
 })
 
 test('écart sur 30 jours, sinon depuis la première pesée', async () => {
-  await addWeight('u', '2026-09-15', 77)
+  await addWeight('u', '2026-09-23', 77)
   await addWeight('u', '2026-10-25', 75.4)
   const { unmount } = renderCard()
   expect(await within(await card()).findByText('− 1,6 kg en 30 jours')).toBeInTheDocument()
   unmount()
+  await db.weight_entries.clear()
+  await addWeight('u', '2026-04-08', 80)
+  await addWeight('u', '2026-10-25', 75.4)
+  const second = renderCard()
+  expect(await within(await card()).findByText('− 4,6 kg depuis le 8 avr.')).toBeInTheDocument()
+  second.unmount()
   await db.weight_entries.clear()
   await addWeight('u', '2026-10-15', 76)
   await addWeight('u', '2026-10-25', 75.4)
@@ -92,4 +98,12 @@ test('courbe : périodes et cas à une seule pesée', async () => {
   expect(screen.getByRole('img', { name: 'Courbe du poids' })).toHaveAttribute('data-points', '1')
   await userEvent.click(screen.getByRole('button', { name: 'Tout' }))
   expect(screen.getByRole('img', { name: 'Courbe du poids' })).toHaveAttribute('data-points', '3')
+})
+
+test('en lb : indication et message de bornes en lb', async () => {
+  await addWeight('u', '2026-10-20', 75.3)
+  renderCard('lb')
+  const sheet = await addViaSheet('60')
+  expect(within(sheet).getByLabelText('Poids (lb)')).toHaveAttribute('placeholder', '166')
+  expect(within(sheet).getByText('Poids : 67 à 661 lb')).toBeInTheDocument()
 })

@@ -5,7 +5,7 @@ import { toISODate } from '../../domain/calendar'
 import { ACTIVITY_LABELS, GOALS, SEX_LABELS, ageOn } from '../../domain/needs'
 import type { Activity, BodyProfile, Goal, Sex } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
-import { parseNumber, rangeError } from './numberField'
+import { intRangeError, parseNumber, rangeError } from './numberField'
 
 /** Fiche personnelle : sexe, naissance, taille, activité, séances par semaine, objectif. */
 export function BodySheet({ profile, defaultSessions, onClose }: {
@@ -29,7 +29,7 @@ export function BodySheet({ profile, defaultSessions, onClose }: {
   const errors = {
     age: rangeError(age, 13, 100, 'Âge : 13 à 100 ans'),
     height: rangeError(heightCm, 120, 230, 'Taille : 120 à 230 cm'),
-    sessions: rangeError(sessionsN, 0, 14, 'Séances : 0 à 14') ?? (sessionsN !== null && !Number.isInteger(sessionsN) ? 'Séances : 0 à 14' : null),
+    sessions: intRangeError(sessionsN, 0, 14, 'Séances : 0 à 14'),
   }
   const invalid = Object.values(errors).some(Boolean)
 

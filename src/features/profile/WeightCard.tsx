@@ -27,7 +27,8 @@ export function WeightCard() {
   // Écart avec la dernière pesée d'il y a 30 jours ou plus, sinon avec la première.
   let delta: string | null = null
   if (latest && entries.length > 1) {
-    const old = [...entries].reverse().find((e) => e.date <= addDays(latest.date, -30))
+    // « en 30 jours » seulement si la pesée de référence date d'environ 30 jours (30 à 37).
+    const old = [...entries].reverse().find((e) => e.date <= addDays(latest.date, -30) && e.date >= addDays(latest.date, -37))
     const ref = old ?? entries[0]
     const diff = Math.round(toDisplay(latest.weight_kg - ref.weight_kg) * 10) / 10
     const sign = diff < 0 ? '−' : '+'
@@ -70,14 +71,14 @@ export function WeightCard() {
 
 function AddWeightSheet({ latest, onClose }: { latest: WeightEntry | undefined; onClose(): void }) {
   const userId = useUserId()
-  const { toKg, unit } = useUnit()
+  const { toKg, toDisplay, unit } = useUnit()
   const today = toISODate(new Date())
   const [text, setText] = useState('')
   const [date, setDate] = useState(today)
   const value = parseWeight(text)
   const kg = value === null ? null : toKg(value)
   const error = text.trim() === '' ? null
-    : kg === null || kg < 30 || kg > 300 ? `Poids : 30 à 300 kg${unit === 'lb' ? ' (66 à 661 lb)' : ''}`
+    : kg === null || kg < 30 || kg > 300 ? `Poids : ${Math.ceil(toDisplay(30))} à ${Math.floor(toDisplay(300))} ${unit}`
       : null
   const dateError = !/^\d{4}-\d{2}-\d{2}$/.test(date) ? 'Date invalide' : date > today ? 'La date ne peut pas être dans le futur' : null
 
@@ -90,7 +91,7 @@ function AddWeightSheet({ latest, onClose }: { latest: WeightEntry | undefined; 
     <Sheet title="Nouvelle pesée" onClose={onClose}>
       <label className="field"><span>Poids ({unit})</span>
         <input aria-label={`Poids (${unit})`} className="input num" inputMode="decimal" autoFocus
-          placeholder={latest ? formatWeight(latest.weight_kg) : undefined} value={text} onChange={(e) => setText(e.target.value)} />
+          placeholder={latest ? formatWeight(toDisplay(latest.weight_kg)) : undefined} value={text} onChange={(e) => setText(e.target.value)} />
       </label>
       {error && <p className="error">{error}</p>}
       <label className="field"><span>Date</span>
