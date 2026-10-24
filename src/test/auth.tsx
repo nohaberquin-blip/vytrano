@@ -7,7 +7,7 @@ export const testProfile: Profile = { user_id: 'u', username: 'moi', display_nam
 export function WithUser({ children, profile = testProfile }: { children: ReactNode; profile?: Profile }) {
   return (
     <AuthContext.Provider value={{
-      loading: false, user: { id: profile.user_id }, profile,
+      loading: false, user: { id: profile.user_id }, profile, recovering: false, endRecovery: () => {},
       refreshProfile: async () => {}, signOut: async () => {},
     }}>
       {children}

@@ -8,6 +8,7 @@ import { ProfilePage } from '../features/profile/ProfilePage'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
 import { OnboardingPage } from '../features/auth/OnboardingPage'
+import { NewPasswordPage } from '../features/auth/NewPasswordPage'
 import { isProvisionalUsername } from '../data/profile'
 import { supabaseConfigured } from '../data/supabase'
 import type { ReactNode } from 'react'
@@ -41,11 +42,12 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
 }
 
 function Gate() {
-  const { loading, user, profile } = useAuth()
+  const { loading, user, profile, recovering } = useAuth()
   const location = useLocation()
   const { count: incoming } = useIncomingRequests()
   if (loading) return <div className="empty">Chargement…</div>
   if (!user) return <LoginPage />
+  if (recovering) return <NewPasswordPage />
   if (profile && isProvisionalUsername(profile.username)) return <OnboardingPage />
   if (location.pathname === '/bienvenue') return <Navigate to="/" replace />
   return (
