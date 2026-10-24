@@ -1,3 +1,5 @@
+import type { SetKind, SetTemplate } from './methods'
+
 export type Unit = 'kg' | 'lb'
 
 export interface Profile {
@@ -24,6 +26,12 @@ export interface UserExercise {
   sets: number
   target_reps: number
   increment: number
+  /** Méthode (modèle de séries) ; absente = classique depuis sets × target_reps. */
+  template?: SetTemplate | null
+  /** Progression automatique (true si absent). */
+  auto_progression?: boolean
+  /** Arrondi des charges calculées, en kg (2,5 si absent). */
+  rounding?: number
   updated_at?: string
 }
 
@@ -49,6 +57,8 @@ export interface ProgramDayExercise {
   day_id: string
   exercise_id: string
   position: number
+  /** Méthode propre à ce jour ; absente = méthode de la fiche. */
+  template?: SetTemplate | null
   updated_at?: string
 }
 
@@ -70,7 +80,11 @@ export interface WorkoutSet {
   workout_id: string
   exercise_id: string
   position: number
-  target_reps: number
+  /** null = jusqu'à l'échec. */
+  target_reps: number | null
+  target_reps_max?: number | null
+  /** Type de série ; absent = série de travail (séances antérieures aux méthodes). */
+  kind?: SetKind
   reps: number
   weight: number
   done: boolean
