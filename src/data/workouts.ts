@@ -1,7 +1,8 @@
 import { buildWorkoutSets } from '../domain/buildWorkout'
 import { fitToTime, type FitExercise, type FitResult } from '../domain/fitTime'
+import { lighten, lightenChanges, type LightenChange } from '../domain/lighten'
 import { nextWeight } from '../domain/progression'
-import type { ProgramDay, Workout, WorkoutSet } from '../domain/types'
+import type { Lightening, ProgramDay, Workout, WorkoutLightening, WorkoutSet } from '../domain/types'
 import { db } from './db'
 import { ensureFiche, repo } from './repo'
 
@@ -19,11 +20,14 @@ export async function getInProgress(userId: string): Promise<{ workout: Workout;
 
 let starting: Promise<Workout> | null = null
 
-/** Démarre une séance, ou renvoie celle déjà en cours (protège contre le double appui). `minutes` : temps disponible. */
-export function startWorkout(userId: string, day: ProgramDay, minutes?: number | null): Promise<Workout> {
+/**
+ * Démarre une séance, ou renvoie celle déjà en cours (protège contre le double appui).
+ * `minutes` : temps disponible ; `lightened` : séance allégée (appliquée avant le temps).
+ */
+export function startWorkout(userId: string, day: ProgramDay, minutes?: number | null, lightened?: Lightening | null): Promise<Workout> {
   starting ??= (async () => {
     const current = await getInProgress(userId)
-    return current ? current.workout : createWorkout(userId, day, minutes ?? null)
+    return current ? current.workout : createWorkout(userId, day, minutes ?? null, lightened ?? null)
   })().finally(() => { starting = null })
   return starting
 }
@@ -44,15 +48,30 @@ async function planWorkout(userId: string, day: ProgramDay, workoutId: string) {
   return { exercises, fiches }
 }
 
+/** Séries prévues, allégées si demandé. */
+async function plannedExercises(userId: string, day: ProgramDay, workoutId: string, lightened: Lightening | null) {
+  const { exercises, fiches } = await planWorkout(userId, day, workoutId)
+  const light = lightened ? lighten(exercises, lightened, fiches) : exercises
+  // Un allègement qui ne change rien n'en est pas un : la séance reste normale (et compte pour la progression).
+  const changed = !!lightened && lightenChanges(exercises, light).length > 0
+  return { exercises: changed ? light : exercises, fiches, lightened: changed ? lightened : null }
+}
+
 /** Ce que donnerait la séance avec `minutes` disponibles (rien n'est enregistré). */
-export async function previewWorkout(userId: string, day: ProgramDay, minutes: number): Promise<FitResult> {
-  const { exercises, fiches } = await planWorkout(userId, day, 'apercu')
+export async function previewWorkout(userId: string, day: ProgramDay, minutes: number, lightened: Lightening | null = null): Promise<FitResult> {
+  const { exercises, fiches } = await plannedExercises(userId, day, 'apercu', lightened)
   return fitToTime(exercises, fiches, minutes)
 }
 
-async function createWorkout(userId: string, day: ProgramDay, minutes: number | null): Promise<Workout> {
+/** Exercices modifiés par l'allègement (rien n'est enregistré). */
+export async function previewLighten(userId: string, day: ProgramDay, mode: Lightening): Promise<LightenChange[]> {
+  const { exercises, fiches } = await planWorkout(userId, day, 'apercu')
+  return lightenChanges(exercises, lighten(exercises, mode, fiches))
+}
+
+async function createWorkout(userId: string, day: ProgramDay, minutes: number | null, lightened: Lightening | null): Promise<Workout> {
   const id = crypto.randomUUID()
-  const { exercises, fiches } = await planWorkout(userId, day, id)
+  const { exercises, fiches, lightened: applied } = await plannedExercises(userId, day, id, lightened)
   const fit = minutes ? fitToTime(exercises, fiches, minutes) : null
   // time_limit seulement si la séance a vraiment été raccourcie.
   const workout = await repo.put<Workout>('workouts', {
@@ -60,6 +79,8 @@ async function createWorkout(userId: string, day: ProgramDay, minutes: number | 
     started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
     ...(fit?.changed ? { time_limit: minutes } : {}),
   })
+  // Allègement dans une table privée : les amis voient la séance, pas un indice sur les règles.
+  if (applied) await repo.put<WorkoutLightening>('workout_lightenings', { id, user_id: userId, mode: applied })
   let position = 0
   for (const s of (fit?.exercises ?? exercises).flatMap((e) => e.sets)) await repo.put('workout_sets', { ...s, position: position++ })
   return workout
@@ -93,6 +114,8 @@ async function applyFinish(workoutId: string): Promise<void> {
   if (!workout || workout.status !== 'in_progress') return
   const sets = await setsOf(workoutId)
   await repo.put('workouts', { ...workout, status: 'done', finished_at: new Date().toISOString() })
+  // Séance allégée : neutre pour la progression.
+  if (await db.workout_lightenings.get(workoutId)) return
   for (const exerciseId of new Set(sets.map((s) => s.exercise_id))) {
     const fiche = await ensureFiche(workout.user_id, exerciseId)
     const weight = nextWeight(fiche, sets.filter((s) => s.exercise_id === exerciseId))
@@ -104,23 +127,33 @@ export async function abandonWorkout(workoutId: string): Promise<void> {
   // Le serveur supprime les séries en cascade.
   await db.workout_sets.where('workout_id').equals(workoutId).delete()
   await repo.remove('workouts', workoutId)
+  if (await db.workout_lightenings.get(workoutId)) await repo.remove('workout_lightenings', workoutId)
 }
 
-/** Séances terminées contenant l'exercice, les plus récentes d'abord, avec leurs séries validées. */
-export async function exerciseHistory(userId: string, exerciseId: string, limit: number) {
+/**
+ * Séances terminées contenant l'exercice, les plus récentes d'abord, avec leurs séries validées.
+ * `normalOnly` : sans les séances allégées.
+ */
+export async function exerciseHistory(userId: string, exerciseId: string, limit: number, normalOnly = false) {
   const sets = await db.workout_sets.where('exercise_id').equals(exerciseId).toArray()
   const byWorkout = new Map<string, WorkoutSet[]>()
   for (const s of sets) byWorkout.set(s.workout_id, [...(byWorkout.get(s.workout_id) ?? []), s])
   const workouts = (await db.workouts.bulkGet([...byWorkout.keys()]))
     .filter((w): w is Workout => !!w && w.status === 'done' && w.user_id === userId)
+  const light = new Set((await db.workout_lightenings.bulkGet(workouts.map((w) => w.id))).filter((l) => l).map((l) => l!.id))
+  return workouts
+    .filter((w) => !(normalOnly && light.has(w.id)))
     .sort((a, b) => (b.finished_at ?? '').localeCompare(a.finished_at ?? ''))
     .slice(0, limit)
-  return workouts.map((w) => ({ workout: w, sets: byWorkout.get(w.id)!.sort(byPosition) }))
+    .map((w) => ({ workout: w, sets: byWorkout.get(w.id)!.sort(byPosition), lightened: light.has(w.id) }))
 }
 
-/** Séries de la dernière séance terminée contenant l'exercice ; si `dayId` est donné, celle de ce jour en priorité. */
+/**
+ * Séries de la dernière séance normale terminée contenant l'exercice (les séances allégées sont sautées) ;
+ * si `dayId` est donné, celle de ce jour en priorité.
+ */
 export async function lastSetsFor(userId: string, exerciseId: string, dayId?: string): Promise<WorkoutSet[]> {
-  const history = await exerciseHistory(userId, exerciseId, dayId ? 50 : 1)
+  const history = await exerciseHistory(userId, exerciseId, dayId ? 50 : 1, true)
   const sameDay = dayId ? history.find((h) => h.workout.program_day_id === dayId) : undefined
   return (sameDay ?? history[0])?.sets ?? []
 }

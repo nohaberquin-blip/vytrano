@@ -157,3 +157,23 @@ export interface WeightEntry {
   weight_kg: number
   updated_at?: string
 }
+
+/** Règles notées (privé) : `days` jours à partir de `start`. */
+export interface Period {
+  id: string
+  user_id: string
+  start: string
+  days: number
+  updated_at?: string
+}
+
+/** Séance allégée (privée, contrairement à la séance que les amis peuvent voir) ; id = id de la séance. */
+export interface WorkoutLightening {
+  id: string
+  user_id: string
+  mode: Lightening
+  updated_at?: string
+}
+
+/** Allègement d'une séance : charges −10 % / −20 %, ou 2 séries de travail par exercice. */
+export type Lightening = 'minus10' | 'minus20' | 'fewer'

@@ -204,6 +204,14 @@ a { color: inherit; }
 .cal-planned .cal-dot { background: var(--planned); }
 .cal-missed .cal-dot { background: var(--danger); }
 .cal-moved .cal-dot { background: var(--moved); }
+:root { --period: #d6457a; }
+@media (prefers-color-scheme: dark) { :root { --period: #ff7aa8; } }
+.period-mark { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--period); flex: none; }
+.period-predicted .period-mark, .period-mark.predicted { opacity: 0.4; }
+.cal-row .period-mark { margin-left: auto; }
+.period-card { margin-top: 12px; }
+.cal-legend { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; }
+.cal-legend .period-mark + * { margin-right: 8px; }
 .cal-progress { text-align: center; font-size: 13px; font-weight: 650; color: var(--muted); }
 .cal-progress.reached { color: var(--ok); }
 .cal-week { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
@@ -282,11 +290,12 @@ a { color: inherit; }
 .time-link { display: block; margin: 10px auto 0; font-size: 15px; }
 .time-limit { margin-top: 12px; }
 .time-choices { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 8px 0 10px; }
-.time-choices button {
+.time-choices button, .lighten-choices button {
   min-height: 44px; padding: 0 2px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 650; white-space: nowrap;
 }
-.time-choices button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.lighten-choices { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 6px; margin: 8px 0 10px; }
+.time-choices button[aria-pressed='true'], .lighten-choices button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .time-changes { margin: 6px 0; padding-left: 18px; }
 .time-changes .removed { text-decoration: line-through; color: var(--muted); }
 .star { font-size: 20px; color: var(--muted); }

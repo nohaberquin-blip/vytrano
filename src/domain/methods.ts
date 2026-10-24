@@ -124,7 +124,7 @@ export function templateError(t: SetTemplate): string | null {
   return null
 }
 
-const DEFAULT_ROUNDING = 2.5
+export const DEFAULT_ROUNDING = 2.5
 
 /** Multiple de `step` le plus proche (2,5 kg si le pas est absent ou invalide). */
 export function roundTo(value: number, step: number | undefined): number {

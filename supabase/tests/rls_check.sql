@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010, 011 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -254,6 +254,47 @@ do $$ begin
       values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 5);
     raise exception 'ÉCHEC : un temps de 5 min doit être refusé';
   exception when check_violation then null; end;
+end $$;
+
+-- ─── Mon cycle : règles et allègements privés, durée 2 à 10 jours, allègement connu ───
+select set_config('role', 'postgres', true);
+insert into public.periods (id, user_id, start, days)
+  values ('acacacac-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-01', 5);
+insert into public.workouts (id, user_id, name, started_at, finished_at, status)
+  values ('adadadad-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS allégée', now(), now(), 'done');
+insert into public.workout_lightenings (id, user_id, mode)
+  values ('adadadad-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'minus10');
+-- Partage réactivé : on vérifie le cas d'un ami qui voit les séances.
+update public.profiles set share_workouts = true where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+do $$ begin
+  begin
+    insert into public.periods (id, user_id, start, days) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-11-01', 1);
+    raise exception 'ÉCHEC : des règles d''un jour doivent être refusées';
+  exception when check_violation then null; end;
+  begin
+    update public.workout_lightenings set mode = 'x' where id = 'adadadad-0000-0000-0000-000000000001';
+    raise exception 'ÉCHEC : un allègement inconnu doit être refusé';
+  exception when check_violation then null; end;
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$ begin
+  if not exists (select 1 from periods where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or not exists (select 1 from workout_lightenings where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : A doit voir ses règles et ses allègements'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  -- B, ami de A, voit la séance (partage activé) mais rien qui trahisse les règles.
+  if not exists (select 1 from workouts where id = 'adadadad-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B (ami) doit voir la séance de A'; end if;
+  if exists (select 1 from periods where user_id = 'aaaaaaaa-0000-0000-0000-000000000001')
+     or exists (select 1 from workout_lightenings where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit voir ni les règles ni les allègements de A'; end if;
+  begin
+    insert into periods (id, user_id, start, days) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-12-01', 5);
+    raise exception 'ÉCHEC : B ne doit pas écrire les règles de A';
+  exception when insufficient_privilege then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───

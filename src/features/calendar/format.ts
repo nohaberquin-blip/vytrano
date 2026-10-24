@@ -5,6 +5,10 @@ export const STATE_LABELS: Record<DayState, string> = {
   done: 'fait', planned: 'prévu', rest: 'repos', missed: 'manqué', moved: 'reporté',
 }
 
+/** Complément d'étiquette d'un jour de règles (notées ou prévues). */
+export const periodLabel = (state: 'period' | 'predicted' | null) =>
+  state === 'period' ? ', Règles' : state === 'predicted' ? ', Règles prévues' : ''
+
 const fmt = (date: string, options: Intl.DateTimeFormatOptions) => noon(date).toLocaleDateString('fr-FR', options)
 
 /** « mercredi 21 octobre » */

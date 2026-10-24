@@ -46,7 +46,7 @@ function units(sets: WorkoutSet[]): { warmups: WorkoutSet[]; units: WorkoutSet[]
 }
 
 /** Garde `max` unités, en retirant d'abord celles de la fin, les top-sets en dernier. */
-function keepUnits(sets: WorkoutSet[], max: number): WorkoutSet[] {
+export function keepUnits(sets: WorkoutSet[], max: number): WorkoutSet[] {
   const { warmups, units: list } = units(sets)
   const kept = [...list]
   while (kept.length > max) {

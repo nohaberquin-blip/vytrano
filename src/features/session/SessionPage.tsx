@@ -10,7 +10,9 @@ import {
 import { nextDay } from '../../domain/rotation'
 import { loadCalendarInput } from '../../data/calendar'
 import { buildCalendar, toISODate } from '../../domain/calendar'
-import type { Workout, WorkoutSet } from '../../domain/types'
+import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
+import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
+import { periodState } from '../../domain/cycle'
 import { useUserId } from '../auth/AuthProvider'
 import { METHOD_LABELS, readTemplate, templateSummary } from '../../domain/methods'
 import type { ProgramDayExercise, UserExercise } from '../../domain/types'
@@ -27,6 +29,7 @@ import { unlockAudio } from './beep'
 import { restSeconds } from '../../domain/rest'
 import { useWakeLock } from './useWakeLock'
 import { TimeLimit } from './TimeLimit'
+import { Lighten } from './Lighten'
 
 export function SessionPage() {
   const userId = useUserId()
@@ -41,6 +44,8 @@ function NextWorkout() {
   const [justFinished] = useState(() => sessionStorage.getItem('muscu.finished'))
   // Temps disponible : facultatif, jamais retenu d'une séance à l'autre.
   const [minutes, setMinutes] = useState<number | null>(null)
+  // Séance allégée : seulement un jour de règles (notées ou prévues), jamais retenue non plus.
+  const [lightened, setLightened] = useState<Lightening | null>(null)
   useEffect(() => { sessionStorage.removeItem('muscu.finished') }, [])
 
   const data = useLive(async () => {
@@ -56,7 +61,8 @@ function NextWorkout() {
     const today = toISODate(new Date())
     const calendar = await loadCalendarInput(userId, today)
     const restDay = !!calendar && buildCalendar(calendar, today, today)[0].state === 'rest'
-    return { tree, day, rows, restDay }
+    const periodDay = (await isFemale(userId)) && periodState(today, await listPeriods(userId), today) !== null
+    return { tree, day, rows, restDay, periodDay }
   }, [userId])
 
   if (!data) return null
@@ -71,10 +77,16 @@ function NextWorkout() {
       </section>
     )
   }
-  const { tree, day, rows, restDay } = data
+  const { tree, day, rows, restDay, periodDay } = data
   return (
     <section className="page">
-      {justFinished && <div className="banner">Séance enregistrée 💪 Les charges ont été mises à jour.</div>}
+      {justFinished && (
+        <div className="banner">
+          {justFinished === 'light'
+            ? 'Séance allégée enregistrée 🌸 Tes charges habituelles ne changent pas.'
+            : 'Séance enregistrée 💪 Les charges ont été mises à jour.'}
+        </div>
+      )}
       <p className="muted small" style={{ margin: 0 }}>{tree.program.name}</p>
       <h1>{day ? day.name : 'Séance'}</h1>
       {restDay && <p className="muted">Jour de repos aujourd'hui</p>}
@@ -92,19 +104,20 @@ function NextWorkout() {
               </li>
             ))}
           </ul>
-          <button className="btn primary block big" style={{ marginTop: 12 }} onClick={() => startWorkout(userId, day, minutes)}>
+          <button className="btn primary block big" style={{ marginTop: 12 }} onClick={() => startWorkout(userId, day, minutes, periodDay ? lightened : null)}>
             Commencer
           </button>
-          <TimeLimit day={day} minutes={minutes} onChange={setMinutes} />
+          {periodDay && <Lighten day={day} mode={lightened} onChange={setLightened} />}
+          <TimeLimit day={day} minutes={minutes} lightened={periodDay ? lightened : null} onChange={setMinutes} />
         </>
       )}
-      {tree.days.length > 1 && <OtherDays minutes={minutes} />}
+      {tree.days.length > 1 && <OtherDays minutes={minutes} lightened={periodDay ? lightened : null} />}
     </section>
   )
 }
 
 /** Permet de faire un autre jour que celui proposé. */
-function OtherDays({ minutes }: { minutes: number | null }) {
+function OtherDays({ minutes, lightened }: { minutes: number | null; lightened: Lightening | null }) {
   const userId = useUserId()
   const [open, setOpen] = useState(false)
   const tree = useLive(() => getActiveProgram(userId), [userId])
@@ -113,7 +126,7 @@ function OtherDays({ minutes }: { minutes: number | null }) {
     <div style={{ marginTop: 20 }}>
       <button className="btn ghost block" onClick={() => setOpen(!open)}>{open ? 'Masquer' : 'Faire un autre jour'}</button>
       {open && tree.days.map((d) => (
-        <button key={d.id} className="list-item" onClick={() => startWorkout(userId, d, minutes)}>
+        <button key={d.id} className="list-item" onClick={() => startWorkout(userId, d, minutes, lightened)}>
           <span>{d.name}</span><span className="muted">Commencer ›</span>
         </button>
       ))}
@@ -133,6 +146,7 @@ function useElapsed(since: string) {
 function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[] }) {
   const userId = useUserId()
   const minutes = useElapsed(workout.started_at)
+  const lightened = useLive(() => showsLightened(userId, workout.id), [userId, workout.id])
   const exerciseIds = [...new Set(sets.map((s) => s.exercise_id))]
   const meta = useLive(async () => Promise.all(exerciseIds.map(async (id) => ({
     id,
@@ -188,7 +202,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   async function finish() {
     if (remaining > 0 && !confirm(`${remaining} série${remaining > 1 ? 's' : ''} non validée${remaining > 1 ? 's' : ''}. Terminer quand même ?`)) return
     // Posé avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
-    sessionStorage.setItem('muscu.finished', '1')
+    sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)
   }
@@ -203,6 +217,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     <section className="page">
       <p className="muted small num" style={{ margin: 0 }}>En cours · {minutes} min</p>
       <h1>{workout.name}</h1>
+      {lightened ? <p className="muted small" style={{ marginTop: -8 }}>Séance allégée</p> : null}
       {workout.time_limit ? <p className="muted small" style={{ marginTop: -8 }}>Séance adaptée à {workout.time_limit} min</p> : null}
       {meta?.map((m) => (
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}

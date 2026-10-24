@@ -35,7 +35,10 @@ progression. Ce n'est pas un suivi de cycle : pas de symptômes, pas de statisti
 
 `lighten(sets, mode, roundingOf)` sur les séries prévues de la séance :
 - **`'minus10'` / `'minus20'`** : chaque charge × 0,9 / × 0,8, arrondie avec `roundTo` au pas
-  d'arrondi de l'exercice (comme les pourcentages des méthodes). Séries, types et répétitions inchangés.
+  d'arrondi de l'exercice (comme les pourcentages des méthodes), mais toujours au moins un pas plus bas
+  (10 kg au pas de 2,5 → 7,5). Séries, types et répétitions inchangés.
+- Un allègement qui ne change rien (par exemple « Moins de séries » sur des exercices à 2 séries) n'est
+  pas enregistré : la séance reste normale.
 - **`'fewer'`** : chaque exercice garde au plus 2 unités (même définition et même règle que
   « Temps disponible » §4 : séries rattachées avec leur série, top-sets retirés en dernier,
   échauffements gardés). Charges inchangées.
@@ -43,7 +46,7 @@ progression. Ce n'est pas un suivi de cycle : pas de symptômes, pas de statisti
 
 ## 5. Progression neutre
 
-- À la fin d'une séance allégée (`workouts.lightened` non nul), les charges de référence des fiches ne
+- À la fin d'une séance allégée (ligne dans `workout_lightenings`), les charges de référence des fiches ne
   changent pas, même si toutes les séries sont réussies.
 - `lastSetsFor` ignore les séances allégées : la séance suivante (mode manuel compris) et
   « la dernière fois » repartent de la dernière séance normale.
@@ -54,10 +57,10 @@ progression. Ce n'est pas un suivi de cycle : pas de symptômes, pas de statisti
 | Élément | Définition |
 |---|---|
 | table `periods` | `id uuid pk`, `user_id uuid` (propriétaire, RLS comme les autres tables privées), `start date not null`, `days smallint not null check (days between 2 and 10)`, `updated_at`, unique `(user_id, start)` |
-| `workouts.lightened` | `text null check (lightened in ('minus10','minus20','fewer'))` |
+| table `workout_lightenings` | `id uuid pk references workouts on delete cascade`, `user_id`, `mode text check (mode in ('minus10','minus20','fewer'))`, RLS propriétaire. Table à part : les amis peuvent lire `workouts`, une colonne laisserait deviner les dates des règles. |
 
 Côté client : table Dexie `periods` (version 5), synchronisée comme les autres ; id stable
-`stableId('period', userId, start)`. `Workout.lightened?` optionnel.
+`stableId('period', userId, start)`. Table Dexie `workout_lightenings` (id = id de la séance).
 
 ## 7. Écrans
 
@@ -70,7 +73,8 @@ Côté client : table Dexie `periods` (version 5), synchronisée comme les autre
   - choix « −10 % », « −20 % », « Moins de séries » (`aria-pressed`), un aperçu
     (« Charges −10 % : Squat 60 → 54 kg… » ou « Moins de séries : Squat 4 → 2 séries… ») et « Annuler » ;
   - « Commencer » et « Faire un autre jour » utilisent l'allègement choisi.
-- **Séance en cours et historique** : mention « Séance allégée ».
+- **Séance en cours et historique** : mention « Séance allégée » (profil « Femme » seulement).
+- **Fin d'une séance allégée** : « Séance allégée enregistrée 🌸 Tes charges habituelles ne changent pas. »
 
 ## 8. Tests
 
