@@ -48,7 +48,7 @@ export function ProgressCard() {
             <li key={b.id} className={date ? 'badge on' : 'badge'}
               aria-label={date ? `${b.label}, obtenu le ${shortDate(date)}` : `${b.label}, à débloquer : ${b.hint}`}>
               <span className="badge-label">{b.label}</span>
-              <span className="badge-sub small">{date ? shortDate(date) : b.hint}</span>
+              {date && <span className="badge-sub small">{shortDate(date)}</span>}
             </li>
           )
         })}
