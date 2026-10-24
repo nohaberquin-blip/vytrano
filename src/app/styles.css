@@ -276,4 +276,4 @@ a { color: inherit; }
 .rest-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
 .rest-bar .btn { background: rgba(127, 127, 127, 0.22); color: inherit; border-color: transparent; padding: 0 4px; white-space: nowrap; }
 /* La barre ne doit pas cacher le bas de la séance. */
-.page:has(.rest-bar) { padding-bottom: 150px; }
+.shell:has(.rest-bar) .content { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 170px); }

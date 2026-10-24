@@ -70,23 +70,26 @@ function accessToken(): string | null {
   }
 }
 
+/** File des requêtes : une annulation part après la programmation qui la précède, jamais avant. */
+let queue: Promise<unknown> = Promise.resolve()
+
 /** Requête qui survit à la mise en arrière-plan de la page (keepalive). */
 function send(path: string, method: 'POST' | 'DELETE', body?: unknown) {
   const token = accessToken()
   if (!token) return
-  void fetch(`${supabaseUrl}/rest/v1/${path}`, {
+  queue = queue.then(() => fetch(`${supabaseUrl}/rest/v1/${path}`, {
     method, keepalive: true,
     headers: {
       apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=minimal',
     },
     body: body === undefined ? undefined : JSON.stringify(body),
-  }).catch(() => { /* hors ligne : l'alerte dans l'app suffira */ })
+  })).catch(() => { /* hors ligne : l'alerte dans l'app suffira */ })
 }
 
 /** Programme la notification de fin de repos (une seule par utilisateur, remplacée). */
 export function scheduleRestAlarm(userId: string, fireAt: number, body: string) {
-  send('rest_alarms', 'POST', { user_id: userId, fire_at: new Date(fireAt).toISOString(), title: 'Repos terminé', body })
+  send('rest_alarms', 'POST', { user_id: userId, fire_at: new Date(fireAt).toISOString(), title: 'Repos terminé', body: body.slice(0, 200) })
 }
 
 export function cancelRestAlarm(userId: string) {

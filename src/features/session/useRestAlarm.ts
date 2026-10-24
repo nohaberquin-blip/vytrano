@@ -12,20 +12,17 @@ const MIN_AHEAD_MS = 3000
 export function useRestAlarm(userId: string, rest: RestState | null) {
   const current = useRef(rest)
   current.current = rest
-  const scheduled = useRef(false)
 
   useEffect(() => {
+    // Une alarme d'une visite précédente (app fermée en arrière-plan) ne doit pas sonner en double.
+    if (pushEnabledFlag()) cancelRestAlarm(userId)
     const onChange = () => {
       if (!pushEnabledFlag()) return
       const r = current.current
       if (document.visibilityState === 'hidden') {
-        if (r && r.endsAt - Date.now() > MIN_AHEAD_MS) {
-          scheduleRestAlarm(userId, r.endsAt, r.next)
-          scheduled.current = true
-        }
-      } else if (scheduled.current) {
+        if (r && r.endsAt - Date.now() > MIN_AHEAD_MS) scheduleRestAlarm(userId, r.endsAt, r.next)
+      } else {
         cancelRestAlarm(userId)
-        scheduled.current = false
       }
     }
     document.addEventListener('visibilitychange', onChange)

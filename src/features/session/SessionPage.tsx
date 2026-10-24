@@ -5,7 +5,7 @@ import { db } from '../../data/db'
 import { getActiveProgram } from '../../data/programs'
 import { useLive } from '../../data/useLive'
 import {
-  abandonWorkout, addSet, finishWorkout, getInProgress, lastDoneDayId, lastSetsFor, startWorkout, updateSet,
+  abandonWorkout, addSet, finishWorkout, getInProgress, lastDoneDayId, lastSetsFor, setsOf, startWorkout, updateSet,
 } from '../../data/workouts'
 import { nextDay } from '../../domain/rotation'
 import { loadCalendarInput } from '../../data/calendar'
@@ -21,13 +21,11 @@ function methodLabel(item: ProgramDayExercise | undefined, fiche: UserExercise |
   return t.method === 'classic' ? undefined : METHOD_LABELS[t.method]
 }
 import { ExerciseCard } from './ExerciseCard'
-import { RestBar } from './RestBar'
-import { useRestTimer } from './useRestTimer'
+import { useRest } from './RestProvider'
 import { readRestSettings, useRestSettings } from './restSettings'
 import { unlockAudio } from './beep'
 import { restSeconds } from '../../domain/rest'
 import { useWakeLock } from './useWakeLock'
-import { useRestAlarm } from './useRestAlarm'
 
 export function SessionPage() {
   const userId = useUserId()
@@ -143,14 +141,16 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   }))), [userId, exerciseIds.join(), workout.program_day_id])
 
   const remaining = sets.filter((s) => !s.done).length
-  const timer = useRestTimer(workout.id)
+  const timer = useRest()
   const [settings] = useRestSettings()
   useWakeLock(settings.wakeLock)
-  useRestAlarm(userId, timer.rest)
   const { show } = useUnit()
 
-  // Ordre de la séance : exercices dans l'ordre affiché, séries par position.
-  const ordered = (meta ?? []).flatMap((m) => sets.filter((s) => s.exercise_id === m.id).sort((a, b) => a.position - b.position))
+  /** Séries de la séance dans l'ordre affiché : exercices dans l'ordre des cartes, séries par position. */
+  function ordered(list: WorkoutSet[]): WorkoutSet[] {
+    const ids = [...new Set([...(meta ?? []).map((m) => m.id), ...list.map((s) => s.exercise_id)])]
+    return ids.flatMap((id) => list.filter((s) => s.exercise_id === id).sort((a, b) => a.position - b.position))
+  }
 
   /** Série suivante à faire : la suite du même exercice, puis les exercices suivants, puis ce qui reste. */
   function nextAfter(done: WorkoutSet, list: WorkoutSet[]): WorkoutSet | undefined {
@@ -158,24 +158,27 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     return [...list.slice(i + 1), ...list.slice(0, i)].find((s) => !s.done)
   }
 
-  function label(s: WorkoutSet): string {
+  function label(s: WorkoutSet, list: WorkoutSet[]): string {
     const m = meta?.find((x) => x.id === s.exercise_id)
-    const rank = sets.filter((x) => x.exercise_id === s.exercise_id && x.position <= s.position).length
+    const rank = list.filter((x) => x.exercise_id === s.exercise_id && x.position <= s.position).length
     return `${m?.name ?? '…'} · série ${rank} · ${show(s.weight)} × ${s.target_reps ?? 'max'}`
   }
 
   async function update(s: WorkoutSet) {
     const before = sets.find((x) => x.id === s.id)
-    if (before && !before.done && s.done && readRestSettings().auto) {
-      unlockAudio()
-      const list = ordered.map((x) => (x.id === s.id ? s : x))
-      const next = nextAfter(s, list)
-      const fiche = meta?.find((m) => m.id === s.exercise_id)?.fiche
-      const seconds = restSeconds(s, next, fiche)
-      if (seconds !== null && next) timer.start(s.id, seconds, label(next))
-    }
+    const becameDone = !!before && !before.done && s.done
+    if (becameDone) unlockAudio() // pendant le toucher : condition du son sur iPhone
     if (before?.done && !s.done && timer.rest?.setId === s.id) timer.stop()
     await updateSet(s)
+    if (!becameDone || !readRestSettings().auto) return
+    // État réellement enregistré : l'affichage peut avoir un temps de retard si on valide vite.
+    const list = ordered(await setsOf(workout.id))
+    const saved = list.find((x) => x.id === s.id) ?? s
+    const next = nextAfter(saved, list)
+    const fiche = meta?.find((m) => m.id === s.exercise_id)?.fiche
+    const seconds = restSeconds(saved, next, fiche)
+    if (seconds !== null && next) timer.start(s.id, seconds, label(next, list))
+    else if (timer.rest) timer.stop() // plus rien à faire : l'ancien repos annoncerait une série déjà faite
   }
 
   async function finish() {
@@ -204,7 +207,6 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
       ))}
       <button className="btn primary block big" onClick={finish}>Terminer la séance</button>
       <button className="btn ghost block" style={{ marginTop: 8, color: 'var(--danger)' }} onClick={abandon}>Abandonner</button>
-      {timer.rest && <RestBar {...timer} />}
     </section>
   )
 }

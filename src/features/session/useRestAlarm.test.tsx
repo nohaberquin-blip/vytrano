@@ -31,7 +31,7 @@ test('arrière-plan pendant un repos : alarme programmée ; retour : annulée', 
   setVisibility('hidden')
   expect(scheduleRestAlarm).toHaveBeenCalledWith('u', r.endsAt, 'Squat · série 2')
   setVisibility('visible')
-  expect(cancelRestAlarm).toHaveBeenCalledWith('u')
+  expect(cancelRestAlarm).toHaveBeenLastCalledWith('u')
 })
 
 test('repos presque fini, sans repos ou sans alertes : rien', () => {
@@ -45,4 +45,12 @@ test('repos presque fini, sans repos ou sans alertes : rien', () => {
   setVisibility('visible')
   setVisibility('hidden')
   expect(scheduleRestAlarm).not.toHaveBeenCalled()
+})
+
+test('au montage et à chaque retour au premier plan : annulation, même sans programmation dans cette page', () => {
+  render(<Host rest={null} />)
+  expect(cancelRestAlarm).toHaveBeenCalledTimes(1)
+  setVisibility('hidden')
+  setVisibility('visible')
+  expect(cancelRestAlarm).toHaveBeenCalledTimes(2)
 })

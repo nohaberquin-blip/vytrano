@@ -31,16 +31,25 @@ export interface RestTimer {
   stop(): void
 }
 
-export function useRestTimer(workoutId: string): RestTimer {
+/**
+ * `workoutId` : séance en cours ; null = aucune (le repos est effacé) ; undefined = pas encore connue.
+ */
+export function useRestTimer(workoutId: string | null | undefined): RestTimer {
   const [rest, setRestState] = useState<RestState | null>(() => {
     const r = readRest()
-    if (r && r.workoutId !== workoutId) { writeRest(null); return null }
+    if (r && workoutId !== undefined && r.workoutId !== workoutId) { writeRest(null); return null }
     return r
   })
   const [now, setNow] = useState(Date.now)
   const signaled = useRef<string | null>(null)
 
   const setRest = (r: RestState | null) => { writeRest(r); setRestState(r); setNow(Date.now()) }
+
+  // Séance terminée, abandonnée ou remplacée : son repos n'a plus de sens.
+  useEffect(() => {
+    if (workoutId !== undefined && rest && rest.workoutId !== workoutId) setRest(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutId, rest])
 
   useEffect(() => {
     if (!rest) return
@@ -65,6 +74,7 @@ export function useRestTimer(workoutId: string): RestTimer {
     remaining: rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0,
     overtime: rest ? Math.max(0, Math.floor((now - rest.endsAt) / 1000)) : 0,
     start(setId, seconds, next) {
+      if (!workoutId) return
       const t = Date.now()
       setRest({ workoutId, setId, endsAt: t + seconds * 1000, total: seconds, next })
     },

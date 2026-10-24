@@ -55,7 +55,7 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
       {increment === null && <p className="error">Palier invalide</p>}
       {(rounding === null || rounding <= 0) && <p className="error">Arrondi invalide</p>}
       <label className="field"><span>Repos de base</span>
-        <input aria-label="Repos de base" className="input num" inputMode="numeric" value={restText}
+        <input aria-label="Repos de base" className="input num" inputMode="text" value={restText}
           placeholder={`Auto (${formatClock(baseRest(fiche.target_reps))} selon les reps)`} onChange={(e) => setRestText(e.target.value)} />
       </label>
       {restError && <p className="error">Repos : 0:10 à 10:00</p>}
