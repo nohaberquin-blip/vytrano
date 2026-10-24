@@ -1,5 +1,5 @@
 import { buildWorkoutSets } from './buildWorkout'
-import { presetTemplate } from './methods'
+import { presetTemplate, withWarmup } from './methods'
 import type { ProgramDayExercise, UserExercise } from './types'
 
 const de = (exercise_id: string, position: number): ProgramDayExercise => ({ id: `de${position}`, day_id: 'd', exercise_id, position })
@@ -71,5 +71,21 @@ describe('selon la méthode', () => {
     const last = [{ id: 'l', workout_id: 'old', exercise_id: 'sq', position: 0, target_reps: 8, reps: 8, weight: 10, done: true }]
     const sets = buildWorkoutSets('w', [de('sq', 0)], new Map([['sq', squat()]]), new Map([['sq', last]]))
     expect(sets[0].weight).toBe(120)
+  })
+})
+
+describe('mode manuel : alignement par type de série', () => {
+  const squat = (template: ReturnType<typeof presetTemplate>): UserExercise =>
+    ({ id: 'f', user_id: 'u', exercise_id: 'sq', sets: 4, target_reps: 8, current_weight: 100, increment: 2.5, auto_progression: false, template })
+  const prev = (kinds: string[], weights: number[]) => kinds.map((kind, i) =>
+    ({ id: `p${i}`, workout_id: 'old', exercise_id: 'sq', position: i, kind: kind as never, target_reps: 8, reps: 8, weight: weights[i], done: true }))
+
+  test('cocher l’échauffement ne décale pas les charges de travail', () => {
+    const last = prev(['work', 'work', 'work', 'work'], [90, 92.5, 95, 97.5])
+    const sets = buildWorkoutSets('w', [{ id: 'de', day_id: 'd', exercise_id: 'sq', position: 0 }],
+      new Map([['sq', squat(withWarmup(presetTemplate('classic')))]]), new Map([['sq', last]]))
+    expect(sets.map((s) => [s.kind, s.weight])).toEqual([
+      ['warmup', 50], ['warmup', 70], ['work', 90], ['work', 92.5], ['work', 95], ['work', 97.5],
+    ])
   })
 })

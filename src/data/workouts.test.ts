@@ -104,3 +104,22 @@ test('mode manuel : terminer une séance réussie ne change pas la référence',
   await finishWorkout(w.id)
   expect((await db.user_exercises.where('exercise_id').equals('squat').first())?.current_weight).toBe(60)
 })
+
+test('mode manuel : chaque jour reprend les charges de sa propre dernière séance', async () => {
+  const p = await createProgram('u', 'B')
+  const dayA = await addDay(p.id, 'A')
+  const dayB = await addDay(p.id, 'B')
+  await addDayExercise('u', dayA.id, 'squat')
+  await addDayExercise('u', dayB.id, 'squat')
+  const fiche = (await db.user_exercises.where('exercise_id').equals('squat').first())!
+  await db.user_exercises.put({ ...fiche, current_weight: 100, sets: 2, target_reps: 8, auto_progression: false })
+  const finishWith = async (day: typeof dayA, weight: number) => {
+    const w = await startWorkout('u', day)
+    for (const s of await db.workout_sets.where('workout_id').equals(w.id).toArray()) await updateSet({ ...s, weight, done: true })
+    await finishWorkout(w.id)
+  }
+  await finishWith(dayB, 80)
+  await finishWith(dayA, 60) // plus récente, mais un autre jour
+  const w = await startWorkout('u', dayB)
+  expect((await db.workout_sets.where('workout_id').equals(w.id).toArray()).map((s) => s.weight)).toEqual([80, 80])
+})

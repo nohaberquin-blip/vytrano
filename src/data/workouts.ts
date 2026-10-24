@@ -37,7 +37,7 @@ async function createWorkout(userId: string, day: ProgramDay): Promise<Workout> 
     started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
   })
   const lastSets = new Map(
-    await Promise.all(dayExercises.map(async (de) => [de.exercise_id, await lastSetsFor(userId, de.exercise_id)] as const)),
+    await Promise.all(dayExercises.map(async (de) => [de.exercise_id, await lastSetsFor(userId, de.exercise_id, day.id)] as const)),
   )
   for (const s of buildWorkoutSets(workout.id, dayExercises, fiches, lastSets)) await repo.put('workout_sets', s)
   return workout
@@ -96,8 +96,11 @@ export async function exerciseHistory(userId: string, exerciseId: string, limit:
   return workouts.map((w) => ({ workout: w, sets: byWorkout.get(w.id)!.sort(byPosition) }))
 }
 
-export async function lastSetsFor(userId: string, exerciseId: string): Promise<WorkoutSet[]> {
-  return (await exerciseHistory(userId, exerciseId, 1))[0]?.sets ?? []
+/** Séries de la dernière séance terminée contenant l'exercice ; si `dayId` est donné, celle de ce jour en priorité. */
+export async function lastSetsFor(userId: string, exerciseId: string, dayId?: string): Promise<WorkoutSet[]> {
+  const history = await exerciseHistory(userId, exerciseId, dayId ? 50 : 1)
+  const sameDay = dayId ? history.find((h) => h.workout.program_day_id === dayId) : undefined
+  return (sameDay ?? history[0])?.sets ?? []
 }
 
 export async function lastDoneDayId(userId: string): Promise<string | null> {
