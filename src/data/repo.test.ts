@@ -104,3 +104,12 @@ test('pull recopie les tables du calendrier', async () => {
   expect(await db.schedule_overrides.get('o')).toMatchObject({ kind: 'train' })
   expect(await db.weekly_goals.get('g')).toMatchObject({ sessions: 4 })
 })
+
+test('pull recopie la fiche et les pesées, nombres convertis', async () => {
+  await pull('u', source({
+    body_profiles: [{ id: 'u', user_id: 'u', height_cm: '180.0', protein_per_kg: '2.2', updated_at: '2026-10-01T00:00:00Z' }],
+    weight_entries: [{ id: 'p', user_id: 'u', date: '2026-10-25', weight_kg: '75.40', updated_at: '2026-10-01T00:00:00Z' }],
+  }))
+  expect(await db.body_profiles.get('u')).toMatchObject({ height_cm: 180, protein_per_kg: 2.2 })
+  expect(await db.weight_entries.get('p')).toMatchObject({ weight_kg: 75.4 })
+})

@@ -10,6 +10,8 @@ import { useUnit } from '../../app/units'
 import type { Workout } from '../../domain/types'
 import { useAuth, useUserId } from '../auth/AuthProvider'
 import { SettingsSection } from './SettingsSection'
+import { NeedsCard } from './NeedsCard'
+import { WeightCard } from './WeightCard'
 import { KIND_LABELS, setKind } from '../../domain/methods'
 
 export function ProfilePage() {
@@ -36,6 +38,8 @@ export function ProfilePage() {
   return (
     <section className="page">
       <h1>{profile?.username ?? 'Profil'}</h1>
+      <NeedsCard />
+      <WeightCard />
 
       <h2>Mes séances</h2>
       {history?.length === 0 && <p className="muted">Aucune séance terminée pour l’instant.</p>}

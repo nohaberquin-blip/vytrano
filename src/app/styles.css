@@ -228,3 +228,34 @@ a { color: inherit; }
 .weekday-picker button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .move-targets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
 .move-targets .btn { padding: 0 4px; font-size: 14px; white-space: nowrap; }
+
+/* ─── Profil : besoins et poids ─── */
+:root { --protein: #2f6fd6; --carbs: #e0a21e; --fat: #c0504d; }
+@media (prefers-color-scheme: dark) { :root { --protein: #6ea2ff; --carbs: #f2c04a; --fat: #ff7d78; } }
+.needs-kcal { font-size: 26px; margin: 4px 0 0; letter-spacing: -0.01em; }
+.needs-kcal .muted { font-size: 15px; }
+.macro-donut { display: flex; align-items: center; gap: 16px; margin: 10px 0 4px; }
+.macro-donut svg { width: 110px; height: 110px; flex: none; }
+.macro-donut circle { fill: none; stroke-width: 16; }
+.macro-donut .track { stroke: var(--surface-2); }
+.macro-donut .macro-protein { stroke: var(--protein); }
+.macro-donut .macro-carbs { stroke: var(--carbs); }
+.macro-donut .macro-fat { stroke: var(--fat); }
+.macro-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 2px; }
+.legend-dot.macro-protein { background: var(--protein); }
+.legend-dot.macro-carbs { background: var(--carbs); }
+.legend-dot.macro-fat { background: var(--fat); }
+.choice-list { border: 0; padding: 0; margin: 0 0 12px; }
+.choice-list legend { font-size: 14px; color: var(--muted); margin-bottom: 6px; padding: 0; }
+.choice {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; margin-bottom: 6px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+}
+.choice input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--text); }
+.periods { grid-template-columns: repeat(4, 1fr); margin: 8px 0; }
+.weight-chart { width: 100%; height: auto; display: block; margin-bottom: 6px; }
+.weight-chart .axis { stroke: var(--line); stroke-width: 1; }
+.weight-chart .label { fill: var(--muted); font-size: 10px; }
+.weight-chart .avg { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.weight-chart .dot { fill: var(--planned); opacity: 0.75; }

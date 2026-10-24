@@ -1,12 +1,13 @@
 import Dexie, { type Table } from 'dexie'
 import type {
-  Exercise, Program, ProgramDay, ProgramDayExercise, ScheduleOverride, TrainingSchedule, UserExercise, WeeklyGoal, Workout, WorkoutSet,
+  BodyProfile, Exercise, Program, ProgramDay, ProgramDayExercise, ScheduleOverride, TrainingSchedule, UserExercise, WeeklyGoal, WeightEntry, Workout, WorkoutSet,
 } from '../domain/types'
 
 export type SyncedTable =
   | 'exercises' | 'user_exercises' | 'programs' | 'program_days'
   | 'program_day_exercises' | 'workouts' | 'workout_sets'
   | 'training_schedules' | 'schedule_overrides' | 'weekly_goals'
+  | 'body_profiles' | 'weight_entries'
 
 export interface OutboxEntry {
   seq?: number
@@ -32,6 +33,8 @@ class MuscuDB extends Dexie {
   training_schedules!: Table<TrainingSchedule, string>
   schedule_overrides!: Table<ScheduleOverride, string>
   weekly_goals!: Table<WeeklyGoal, string>
+  body_profiles!: Table<BodyProfile, string>
+  weight_entries!: Table<WeightEntry, string>
   outbox!: Table<OutboxEntry, number>
 
   constructor() {
@@ -52,6 +55,7 @@ class MuscuDB extends Dexie {
       schedule_overrides: 'id, user_id, date',
       weekly_goals: 'id, user_id, week_start',
     })
+    this.version(4).stores({ body_profiles: 'id, user_id', weight_entries: 'id, user_id, date' })
   }
 }
 

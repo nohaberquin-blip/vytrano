@@ -52,6 +52,8 @@ export interface PullSource {
 const NUMERIC: Partial<Record<SyncedTable, string[]>> = {
   user_exercises: ['current_weight', 'increment', 'rounding'],
   workout_sets: ['weight'],
+  body_profiles: ['height_cm', 'protein_per_kg'],
+  weight_entries: ['weight_kg'],
 }
 
 /** Ordre parent → enfant : les enfants sont chargés à partir des ids de leurs parents. */
@@ -66,6 +68,8 @@ const PULL_ORDER: Array<{ table: SyncedTable; parent?: SyncedTable }> = [
   { table: 'training_schedules' },
   { table: 'schedule_overrides' },
   { table: 'weekly_goals' },
+  { table: 'body_profiles' },
+  { table: 'weight_entries' },
 ]
 
 /** Recopie les données serveur de l'utilisateur dans la base locale, sans écraser les écritures en attente. */
@@ -106,6 +110,7 @@ export async function pull(userId: string, source: PullSource = supabaseSource):
 const OWNER_COL: Partial<Record<SyncedTable, string>> = {
   user_exercises: 'user_id', programs: 'owner_id', workouts: 'user_id',
   training_schedules: 'user_id', schedule_overrides: 'user_id', weekly_goals: 'user_id',
+  body_profiles: 'user_id', weight_entries: 'user_id',
 }
 const PARENT_COL: Partial<Record<SyncedTable, string>> = {
   program_days: 'program_id', program_day_exercises: 'day_id', workout_sets: 'workout_id',
