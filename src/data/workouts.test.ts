@@ -1,6 +1,7 @@
 import { db } from './db'
 import { addDay, addDayExercise, createProgram } from './programs'
-import { abandonWorkout, finishWorkout, getInProgress, lastSetsFor, startWorkout, updateSet } from './workouts'
+import { presetTemplate } from '../domain/methods'
+import { abandonWorkout, addSet, finishWorkout, getInProgress, lastSetsFor, startWorkout, updateSet } from './workouts'
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()))
@@ -80,4 +81,16 @@ test('double appui sur Terminer → la hausse n’est appliquée qu’une fois',
   await Promise.all([finishWorkout(w.id), finishWorkout(w.id)])
   await finishWorkout(w.id)
   expect((await db.user_exercises.where('exercise_id').equals('squat').first())?.current_weight).toBe(62.5)
+})
+
+test('séance top set + back-off reprise avec ses types ; ＋ Série copie le type de la dernière', async () => {
+  const day = await setupDay(120)
+  const fiche = (await db.user_exercises.where('exercise_id').equals('squat').first())!
+  await db.user_exercises.put({ ...fiche, template: presetTemplate('top_backoff') })
+  const w = await startWorkout('u', day)
+  const resumed = await getInProgress('u')
+  expect(resumed?.sets.map((s) => s.kind)).toEqual(['top', 'backoff', 'backoff', 'backoff'])
+  await addSet(w.id, 'squat')
+  const after = await db.workout_sets.where('workout_id').equals(w.id).sortBy('position')
+  expect(after.map((s) => s.kind)).toEqual(['top', 'backoff', 'backoff', 'backoff', 'backoff'])
 })

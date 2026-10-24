@@ -132,7 +132,9 @@ export function roundTo(value: number, step: number | undefined): number {
   return Math.round(Math.round(value / st) * st * 100) / 100
 }
 
+/** Charge d'une série : la référence telle quelle à 100 %, sinon le pourcentage arrondi. */
 export function plannedWeight(reference: number, pct: number, rounding?: number): number {
+  if (pct === 100) return reference
   return roundTo((reference * pct) / 100, rounding)
 }
 

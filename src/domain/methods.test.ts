@@ -69,3 +69,8 @@ test('setKind : une série ancienne sans type est une série de travail', () => 
   expect(setKind({ id: 's', workout_id: 'w', exercise_id: 'e', position: 0, target_reps: 8, reps: 8, weight: 60, done: true })).toBe('work')
   expect(setKind({ id: 's', workout_id: 'w', exercise_id: 'e', position: 0, target_reps: 8, reps: 8, weight: 60, done: true, kind: 'top' })).toBe('top')
 })
+
+test('à 100 %, la charge de référence est reprise telle quelle (jamais arrondie)', () => {
+  expect(plannedWeight(61, 100)).toBe(61)
+  expect(plannedWeight(61, 90)).toBe(55)
+})

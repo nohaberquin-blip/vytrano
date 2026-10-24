@@ -36,7 +36,10 @@ async function createWorkout(userId: string, day: ProgramDay): Promise<Workout> 
     id: crypto.randomUUID(), user_id: userId, program_day_id: day.id, name: day.name,
     started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
   })
-  for (const s of buildWorkoutSets(workout.id, dayExercises, fiches)) await repo.put('workout_sets', s)
+  const lastSets = new Map(
+    await Promise.all(dayExercises.map(async (de) => [de.exercise_id, await lastSetsFor(userId, de.exercise_id)] as const)),
+  )
+  for (const s of buildWorkoutSets(workout.id, dayExercises, fiches, lastSets)) await repo.put('workout_sets', s)
   return workout
 }
 
