@@ -13,13 +13,22 @@
    ```
 6. `npm install` puis `npm run dev`.
 
-# Mise en ligne (Vercel + vytrano.com)
+# Mise en ligne (Vercel)
 
-1. Code sur GitHub (dépôt privé), branche `main`.
-2. vercel.com → **Add New → Project** → importer le dépôt. Framework : Vite (détecté).
-   **Environment Variables** : `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (mêmes valeurs que `.env.local`).
-3. Projet Vercel → **Settings → Domains** : ajouter `vytrano.com` et `www.vytrano.com`.
-4. Namecheap → **Domain List → Manage → Advanced DNS** : créer les enregistrements indiqués par Vercel
-   (en général `A  @  76.76.21.21` et `CNAME  www  cname.vercel-dns.com`), supprimer les anciens enregistrements de parking.
-5. Supabase → **Authentication → URL Configuration** : *Site URL* = `https://vytrano.com`,
-   *Redirect URLs* : ajouter `https://vytrano.com/**` et `https://www.vytrano.com/**`.
+Adresse actuelle : **https://vytrano.vercel.app** (projet Vercel `xoly/vytrano`).
+
+Pour publier une nouvelle version, depuis le dossier du projet :
+```
+npx vercel@latest deploy --prod --yes --build-env VITE_SUPABASE_URL=<url> --build-env VITE_SUPABASE_ANON_KEY=<clé publique>
+```
+(même valeurs que `.env.local` ; `npx vercel@latest login` si l'outil demande de se connecter).
+
+Supabase → **Authentication → URL Configuration** : *Site URL* = `https://vytrano.vercel.app`,
+*Redirect URLs* : `https://vytrano.vercel.app/**`.
+
+## Plus tard : domaine vytrano.com
+
+`vytrano.com` et `www.vytrano.com` sont déjà ajoutés au projet Vercel. Le domaine est suspendu chez
+Namecheap (expiré le 21/09/2026). Après renouvellement :
+1. Namecheap → **Manage** → **Nameservers** → **Custom DNS** : `ns1.vercel-dns.com`, `ns2.vercel-dns.com` (✓ pour enregistrer).
+2. Supabase : *Site URL* = `https://vytrano.com`, ajouter `https://vytrano.com/**` et `https://www.vytrano.com/**` aux Redirect URLs.
