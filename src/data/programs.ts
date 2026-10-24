@@ -1,4 +1,5 @@
 import type { Program, ProgramDay, ProgramDayExercise } from '../domain/types'
+import type { SetTemplate } from '../domain/methods'
 import { db } from './db'
 import { ensureFiche, repo } from './repo'
 
@@ -82,6 +83,12 @@ export async function moveDayExercise(id: string, delta: -1 | 1): Promise<void> 
   const item = await db.program_day_exercises.get(id)
   if (!item) return
   await swapWithNeighbour('program_day_exercises', await db.program_day_exercises.where('day_id').equals(item.day_id).toArray(), id, delta)
+}
+
+/** Méthode propre à cet exercice ce jour-là ; null = revenir à la méthode de la fiche. */
+export async function setDayExerciseTemplate(id: string, template: SetTemplate | null): Promise<void> {
+  const item = await db.program_day_exercises.get(id)
+  if (item) await repo.put('program_day_exercises', { ...item, template })
 }
 
 export async function removeDayExercise(id: string) {

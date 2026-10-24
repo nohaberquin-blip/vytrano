@@ -171,3 +171,4 @@ a { color: inherit; }
 .planned-row { margin-bottom: 6px; }
 .planned-row .input { padding: 0 6px; font-size: 14px; min-height: 40px; }
 .planned-row.attached { padding-left: 12px; border-left: 3px solid var(--line); }
+.link-btn { background: none; border: 0; padding: 4px 0; color: var(--muted); font: inherit; text-decoration: underline; cursor: pointer; }

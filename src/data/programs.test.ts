@@ -1,5 +1,6 @@
 import { db } from './db'
-import { addDay, addDayExercise, createProgram, deleteProgram, getActiveProgram, moveDay, setActiveProgram } from './programs'
+import { addDay, addDayExercise, createProgram, deleteProgram, getActiveProgram, moveDay, setActiveProgram, setDayExerciseTemplate } from './programs'
+import { presetTemplate } from '../domain/methods'
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()))
@@ -60,4 +61,18 @@ test('supprimer le programme actif en active un autre', async () => {
   expect(await db.programs.get(a.id)).toBeUndefined()
   expect(await db.program_days.count()).toBe(0)
   expect((await db.programs.get(b.id))?.is_active).toBe(true)
+})
+
+test('méthode propre à un exercice d’un jour : définie puis retirée, chaque fois envoyée au serveur', async () => {
+  const p = await createProgram('u', 'A')
+  const d = await addDay(p.id, 'Jour 1')
+  const item = await addDayExercise('u', d.id, 'squat')
+  await db.outbox.clear()
+  await setDayExerciseTemplate(item.id, presetTemplate('classic'))
+  expect((await db.program_day_exercises.get(item.id))?.template).toEqual(presetTemplate('classic'))
+  await setDayExerciseTemplate(item.id, null)
+  expect((await db.program_day_exercises.get(item.id))?.template).toBeNull()
+  const out = await db.outbox.toArray()
+  expect(out).toHaveLength(1) // même ligne : l'écriture en attente est mise à jour
+  expect(out[0].row.template).toBeNull()
 })
