@@ -1,5 +1,6 @@
 import { db, type SyncedTable } from './db'
 import { supabase } from './supabase'
+import { DEFAULT_FICHE, type UserExercise } from '../domain/types'
 
 type Row = { id: string; updated_at?: string }
 
@@ -108,4 +109,11 @@ const supabaseSource: PullSource = {
     if (error) throw error
     return data
   },
+}
+
+/** Fiche de l'utilisateur pour un exercice, créée avec les valeurs par défaut si absente. */
+export async function ensureFiche(userId: string, exerciseId: string): Promise<UserExercise> {
+  const existing = await db.user_exercises.where('exercise_id').equals(exerciseId).filter((f) => f.user_id === userId).first()
+  if (existing) return existing
+  return repo.put('user_exercises', { id: crypto.randomUUID(), user_id: userId, exercise_id: exerciseId, ...DEFAULT_FICHE })
 }

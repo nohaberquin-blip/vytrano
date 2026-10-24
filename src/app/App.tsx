@@ -11,6 +11,7 @@ import { OnboardingPage } from '../features/auth/OnboardingPage'
 import { isProvisionalUsername } from '../data/profile'
 import { supabaseConfigured } from '../data/supabase'
 import type { ReactNode } from 'react'
+import { UnitContext } from './units'
 
 export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; badges?: Record<string, number> }) {
   return (
@@ -44,7 +45,11 @@ function Gate() {
   if (!user) return <LoginPage />
   if (profile && isProvisionalUsername(profile.username)) return <OnboardingPage />
   if (location.pathname === '/bienvenue') return <Navigate to="/" replace />
-  return <AppRoutes />
+  return (
+    <UnitContext.Provider value={profile?.unit ?? 'kg'}>
+      <AppRoutes />
+    </UnitContext.Provider>
+  )
 }
 
 function NotConfigured() {
