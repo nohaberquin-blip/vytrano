@@ -34,10 +34,7 @@ export function NeedsCard() {
       {ready ? (
         <>
           <p className="needs-kcal num"><strong>{fmtInt(n.kcal!)} kcal</strong>{perso(n.custom.kcal)} <span className="muted">par jour</span></p>
-          <p className="num" style={{ margin: '4px 0' }}>
-            Protéines <strong>{n.protein} g</strong>{perso(n.custom.protein)} · Glucides <strong>{n.carbs} g</strong> · Lipides <strong>{n.fat} g</strong>{perso(n.custom.fat)}
-          </p>
-          <MacroBar protein={n.protein!} carbs={n.carbs!} fat={n.fat!} />
+          <MacroDonut protein={n.protein!} carbs={n.carbs!} fat={n.fat!} custom={n.custom} />
           {n.carbsExhausted && <p className="error">0 g de glucides : baisse les protéines ou les lipides</p>}
         </>
       ) : (
@@ -64,13 +61,46 @@ export function NeedsCard() {
   )
 }
 
-/** Part de chaque macro dans les calories. */
-function MacroBar({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
-  const parts = [['protein', protein * 4], ['carbs', carbs * 4], ['fat', fat * 9]] as const
-  const total = parts.reduce((s, [, k]) => s + k, 0) || 1
+const MACROS = [
+  { key: 'protein', label: 'Protéines', kcalPerG: 4 },
+  { key: 'carbs', label: 'Glucides', kcalPerG: 4 },
+  { key: 'fat', label: 'Lipides', kcalPerG: 9 },
+] as const
+
+/** Diagramme circulaire : part de chaque macro dans les calories, avec la légende en grammes. */
+function MacroDonut({ protein, carbs, fat, custom }: {
+  protein: number; carbs: number; fat: number; custom: { protein: boolean; fat: boolean }
+}) {
+  const grams = { protein, carbs, fat }
+  const kcal = MACROS.map((m) => grams[m.key] * m.kcalPerG)
+  const total = kcal.reduce((a, b) => a + b, 0) || 1
+  const pct = kcal.map((k) => Math.round((k / total) * 100))
+  const R = 42
+  const C = 2 * Math.PI * R
+  let offset = 0
   return (
-    <div className="macro-bar" aria-hidden>
-      {parts.map(([key, k]) => <span key={key} className={`macro-${key}`} style={{ width: `${(k / total) * 100}%` }} />)}
+    <div className="macro-donut">
+      <svg viewBox="0 0 110 110" role="img"
+        aria-label={`Répartition des calories : ${MACROS.map((m, i) => `${m.label.toLowerCase()} ${pct[i]} %`).join(', ')}`}>
+        <circle cx="55" cy="55" r={R} className="track" />
+        {MACROS.map((m, i) => {
+          const len = (kcal[i] / total) * C
+          const el = (
+            <circle key={m.key} cx="55" cy="55" r={R} className={`part macro-${m.key}`}
+              strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} transform="rotate(-90 55 55)" />
+          )
+          offset += len
+          return el
+        })}
+      </svg>
+      <ul className="macro-legend num">
+        {MACROS.map((m, i) => (
+          <li key={m.key}>
+            <span className={`legend-dot macro-${m.key}`} aria-hidden /> {m.label} <strong>{grams[m.key]} g</strong>
+            {m.key !== 'carbs' && perso(custom[m.key])} <span className="muted small">{pct[i]} %</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

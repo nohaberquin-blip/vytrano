@@ -27,6 +27,8 @@ test('fiche complète et pesée : calories, macros, IMC', async () => {
   expect(c).toHaveTextContent('Glucides 199 g')
   expect(c).toHaveTextContent('Lipides 54 g')
   expect(c).toHaveTextContent('IMC 23,1 (normal)')
+  expect(within(c).getByRole('img', { name: 'Répartition des calories : protéines 34 %, glucides 41 %, lipides 25 %' })).toBeInTheDocument()
+  expect(c.querySelectorAll('.macro-donut circle.part')).toHaveLength(3)
   expect(c).toHaveTextContent('Sèche')
   expect(c).toHaveTextContent('Repères moyens, pas un avis médical.')
 })
