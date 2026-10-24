@@ -198,7 +198,7 @@ do $$ begin
   exception when check_violation then null; end;
   begin
     insert into public.body_profiles (id, user_id, fat_pct) values ('bbbbbbbb-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002', 50);
-    raise exception 'ÉCHEC : 50 % de lipides doit être refusé';
+    raise exception 'ÉCHEC : 50 pour cent de lipides doit être refusé';
   exception when check_violation then null; end;
   begin
     insert into public.weight_entries (id, user_id, date, weight_kg) values (gen_random_uuid(), 'bbbbbbbb-0000-0000-0000-000000000002', '2026-10-25', 20);
