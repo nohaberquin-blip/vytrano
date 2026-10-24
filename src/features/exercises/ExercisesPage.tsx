@@ -54,7 +54,11 @@ export function ExercisesPage() {
       {open && (
         <ExerciseSheet key={open.fiche.id} exercise={open.exercise!} fiche={open.fiche}
           save={(f) => repo.put('user_exercises', f)} onClose={() => setOpenId(null)}
-          onRemove={async () => { await repo.remove('user_exercises', open.fiche.id); setOpenId(null) }} />
+          onRemove={async () => {
+            if (!confirm(`Retirer « ${open.exercise!.name} » de tes exercices ? Ses réglages seront perdus.`)) return
+            await repo.remove('user_exercises', open.fiche.id)
+            setOpenId(null)
+          }} />
       )}
       {picking && (
         <Sheet title="Ajouter un exercice" onClose={() => setPicking(false)}>

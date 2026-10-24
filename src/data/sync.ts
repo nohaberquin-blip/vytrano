@@ -70,18 +70,20 @@ export function createSync(client: SyncClient) {
     clearTimeout(kickTimer)
     kickTimer = setTimeout(() => void flush(), 300)
   }
+  // Seule une nouvelle valeur de ligne relance l'envoi ; pas les compteurs mis à jour par flush lui-même.
+  const onUpdating = (mods: object) => { if ('row' in mods) kick() }
 
   /** Lance la synchronisation en continu ; renvoie la fonction d'arrêt. */
   function start(): () => void {
     const onOnline = () => void flush()
     window.addEventListener('online', onOnline)
     db.outbox.hook('creating', kick)
-    db.outbox.hook('updating', kick)
+    db.outbox.hook('updating', onUpdating)
     void flush()
     return () => {
       window.removeEventListener('online', onOnline)
       db.outbox.hook('creating').unsubscribe(kick)
-      db.outbox.hook('updating').unsubscribe(kick)
+      db.outbox.hook('updating').unsubscribe(onUpdating)
       clearTimeout(retryTimer)
       clearTimeout(kickTimer)
     }

@@ -56,3 +56,12 @@ test('erreur définitive (contrainte Postgres) → entrée mise de côté, la su
   expect(left).toHaveLength(1)
   expect(left[0]).toMatchObject({ key: 'bad', dead: 1 })
 })
+
+test('un échec ne relance pas immédiatement l’envoi (le délai croissant s’applique)', async () => {
+  await repo.put('workouts', w('w1'))
+  const { client, calls } = fakeClient(() => ({ message: 'Failed to fetch' }))
+  const stop = createSync(client).start()
+  await new Promise((r) => setTimeout(r, 900))
+  stop()
+  expect(calls.length).toBe(1)
+})

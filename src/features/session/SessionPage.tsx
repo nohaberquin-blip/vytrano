@@ -120,8 +120,9 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
 
   async function finish() {
     if (remaining > 0 && !confirm(`${remaining} série${remaining > 1 ? 's' : ''} non validée${remaining > 1 ? 's' : ''}. Terminer quand même ?`)) return
-    await finishWorkout(workout.id)
+    // Posé avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
     sessionStorage.setItem('muscu.finished', '1')
+    await finishWorkout(workout.id)
   }
 
   async function abandon() {

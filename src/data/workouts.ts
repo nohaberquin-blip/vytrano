@@ -16,7 +16,18 @@ export async function getInProgress(userId: string): Promise<{ workout: Workout;
   return workout ? { workout, sets: await setsOf(workout.id) } : null
 }
 
-export async function startWorkout(userId: string, day: ProgramDay): Promise<Workout> {
+let starting: Promise<Workout> | null = null
+
+/** Démarre une séance, ou renvoie celle déjà en cours (protège contre le double appui). */
+export function startWorkout(userId: string, day: ProgramDay): Promise<Workout> {
+  starting ??= (async () => {
+    const current = await getInProgress(userId)
+    return current ? current.workout : createWorkout(userId, day)
+  })().finally(() => { starting = null })
+  return starting
+}
+
+async function createWorkout(userId: string, day: ProgramDay): Promise<Workout> {
   const dayExercises = await db.program_day_exercises.where('day_id').equals(day.id).toArray()
   const fiches = new Map(
     (await Promise.all(dayExercises.map((de) => ensureFiche(userId, de.exercise_id)))).map((f) => [f.exercise_id, f]),

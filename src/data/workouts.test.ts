@@ -64,3 +64,11 @@ test('abandonner supprime la séance et ses séries', async () => {
   expect(await db.workouts.get(w.id)).toBeUndefined()
   expect(await db.workout_sets.where('workout_id').equals(w.id).count()).toBe(0)
 })
+
+test('deux appuis simultanés sur Commencer → une seule séance', async () => {
+  const day = await setupDay()
+  const [a, b] = await Promise.all([startWorkout('u', day), startWorkout('u', day)])
+  expect(a.id).toBe(b.id)
+  expect(await db.workouts.count()).toBe(1)
+  expect(await db.workout_sets.count()).toBe(4)
+})
