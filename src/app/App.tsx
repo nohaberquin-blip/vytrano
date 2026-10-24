@@ -12,6 +12,7 @@ import { isProvisionalUsername } from '../data/profile'
 import { supabaseConfigured } from '../data/supabase'
 import type { ReactNode } from 'react'
 import { UnitContext } from './units'
+import { useIncomingRequests } from '../features/friends/useIncomingRequests'
 
 export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; badges?: Record<string, number> }) {
   return (
@@ -41,13 +42,14 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
 function Gate() {
   const { loading, user, profile } = useAuth()
   const location = useLocation()
+  const { count: incoming } = useIncomingRequests()
   if (loading) return <div className="empty">Chargement…</div>
   if (!user) return <LoginPage />
   if (profile && isProvisionalUsername(profile.username)) return <OnboardingPage />
   if (location.pathname === '/bienvenue') return <Navigate to="/" replace />
   return (
     <UnitContext.Provider value={profile?.unit ?? 'kg'}>
-      <AppRoutes />
+      <AppRoutes badges={{ '/amis': incoming }} />
     </UnitContext.Provider>
   )
 }
