@@ -228,3 +228,20 @@ a { color: inherit; }
 .weekday-picker button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .move-targets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
 .move-targets .btn { padding: 0 4px; font-size: 14px; white-space: nowrap; }
+
+/* ─── Profil : besoins et poids ─── */
+:root { --protein: #2f6fd6; --carbs: #e0a21e; --fat: #c0504d; }
+@media (prefers-color-scheme: dark) { :root { --protein: #6ea2ff; --carbs: #f2c04a; --fat: #ff7d78; } }
+.needs-kcal { font-size: 26px; margin: 4px 0 0; letter-spacing: -0.01em; }
+.needs-kcal .muted { font-size: 15px; }
+.macro-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface-2); margin: 8px 0 4px; }
+.macro-protein { background: var(--protein); }
+.macro-carbs { background: var(--carbs); }
+.macro-fat { background: var(--fat); }
+.choice-list { border: 0; padding: 0; margin: 0 0 12px; }
+.choice-list legend { font-size: 14px; color: var(--muted); margin-bottom: 6px; padding: 0; }
+.choice {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; margin-bottom: 6px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+}
+.choice input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--text); }
