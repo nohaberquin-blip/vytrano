@@ -78,6 +78,8 @@ export interface Workout {
   status: WorkoutStatus
   /** Temps disponible choisi (minutes) ; absent = séance complète. */
   time_limit?: number | null
+  /** Séance allégée (jour de règles) ; neutre pour la progression. */
+  lightened?: Lightening | null
   updated_at?: string
 }
 
@@ -157,3 +159,15 @@ export interface WeightEntry {
   weight_kg: number
   updated_at?: string
 }
+
+/** Règles notées (privé) : `days` jours à partir de `start`. */
+export interface Period {
+  id: string
+  user_id: string
+  start: string
+  days: number
+  updated_at?: string
+}
+
+/** Allègement d'une séance : charges −10 % / −20 %, ou 2 séries de travail par exercice. */
+export type Lightening = 'minus10' | 'minus20' | 'fewer'
