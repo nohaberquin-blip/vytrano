@@ -32,6 +32,8 @@ export interface UserExercise {
   auto_progression?: boolean
   /** Arrondi des charges calculées, en kg (2,5 si absent). */
   rounding?: number
+  /** Repos de base en secondes ; absent = selon les reps visées. */
+  rest_seconds?: number | null
   updated_at?: string
 }
 
