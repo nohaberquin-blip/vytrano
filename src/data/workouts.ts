@@ -1,4 +1,5 @@
 import { buildWorkoutSets } from '../domain/buildWorkout'
+import { fitToTime, type FitExercise, type FitResult } from '../domain/fitTime'
 import { nextWeight } from '../domain/progression'
 import type { ProgramDay, Workout, WorkoutSet } from '../domain/types'
 import { db } from './db'
@@ -18,28 +19,47 @@ export async function getInProgress(userId: string): Promise<{ workout: Workout;
 
 let starting: Promise<Workout> | null = null
 
-/** Démarre une séance, ou renvoie celle déjà en cours (protège contre le double appui). */
-export function startWorkout(userId: string, day: ProgramDay): Promise<Workout> {
+/** Démarre une séance, ou renvoie celle déjà en cours (protège contre le double appui). `minutes` : temps disponible. */
+export function startWorkout(userId: string, day: ProgramDay, minutes?: number | null): Promise<Workout> {
   starting ??= (async () => {
     const current = await getInProgress(userId)
-    return current ? current.workout : createWorkout(userId, day)
+    return current ? current.workout : createWorkout(userId, day, minutes ?? null)
   })().finally(() => { starting = null })
   return starting
 }
 
-async function createWorkout(userId: string, day: ProgramDay): Promise<Workout> {
-  const dayExercises = await db.program_day_exercises.where('day_id').equals(day.id).toArray()
+/** Séries prévues pour ce jour, par exercice du jour (dans l'ordre), sans rien enregistrer de la séance. */
+async function planWorkout(userId: string, day: ProgramDay, workoutId: string) {
+  const dayExercises = (await db.program_day_exercises.where('day_id').equals(day.id).toArray()).sort((a, b) => a.position - b.position)
   const fiches = new Map(
     (await Promise.all(dayExercises.map((de) => ensureFiche(userId, de.exercise_id)))).map((f) => [f.exercise_id, f]),
   )
-  const workout = await repo.put<Workout>('workouts', {
-    id: crypto.randomUUID(), user_id: userId, program_day_id: day.id, name: day.name,
-    started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
-  })
   const lastSets = new Map(
     await Promise.all(dayExercises.map(async (de) => [de.exercise_id, await lastSetsFor(userId, de.exercise_id, day.id)] as const)),
   )
-  for (const s of buildWorkoutSets(workout.id, dayExercises, fiches, lastSets)) await repo.put('workout_sets', s)
+  const exercises: FitExercise[] = dayExercises.map((de) => ({
+    key: de.id, exerciseId: de.exercise_id, priority: !!de.priority,
+    sets: buildWorkoutSets(workoutId, [de], fiches, lastSets),
+  }))
+  return { exercises, fiches }
+}
+
+/** Ce que donnerait la séance avec `minutes` disponibles (rien n'est enregistré). */
+export async function previewWorkout(userId: string, day: ProgramDay, minutes: number): Promise<FitResult> {
+  const { exercises, fiches } = await planWorkout(userId, day, 'apercu')
+  return fitToTime(exercises, fiches, minutes)
+}
+
+async function createWorkout(userId: string, day: ProgramDay, minutes: number | null): Promise<Workout> {
+  const workout = await repo.put<Workout>('workouts', {
+    id: crypto.randomUUID(), user_id: userId, program_day_id: day.id, name: day.name,
+    started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
+    ...(minutes ? { time_limit: minutes } : {}),
+  })
+  const { exercises, fiches } = await planWorkout(userId, day, workout.id)
+  const kept = minutes ? fitToTime(exercises, fiches, minutes).exercises : exercises
+  let position = 0
+  for (const s of kept.flatMap((e) => e.sets)) await repo.put('workout_sets', { ...s, position: position++ })
   return workout
 }
 

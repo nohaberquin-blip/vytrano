@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -19,7 +19,7 @@ insert into public.friendships (requester_id, addressee_id, status)
 insert into public.exercises (id, owner_id, name, muscle_group) values ('eeeeeeee-0000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS curl perso', 'Biceps');
 insert into public.programs (id, owner_id, name, is_active) values ('ffffffff-0000-0000-0000-000000000006', 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS prog', true);
 insert into public.program_days (id, program_id, position, name) values ('ffffffff-0000-0000-0000-000000000007', 'ffffffff-0000-0000-0000-000000000006', 0, 'Jour 1');
-insert into public.program_day_exercises (id, day_id, exercise_id, position, template) values ('ffffffff-0000-0000-0000-000000000008', 'ffffffff-0000-0000-0000-000000000007', 'eeeeeeee-0000-0000-0000-000000000005', 0, '{"method":"top_backoff","sets":[{"kind":"top","reps":5,"pct":100}]}');
+insert into public.program_day_exercises (id, day_id, exercise_id, position, template, priority) values ('ffffffff-0000-0000-0000-000000000008', 'ffffffff-0000-0000-0000-000000000007', 'eeeeeeee-0000-0000-0000-000000000005', 0, '{"method":"top_backoff","sets":[{"kind":"top","reps":5,"pct":100}]}', true);
 insert into public.workouts (id, user_id, name, started_at, finished_at, status)
   values ('dddddddd-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000001', 'Jour 1', now() - interval '1 hour', now(), 'done');
 insert into public.workout_sets (id, workout_id, exercise_id, position, target_reps, reps, weight, done, kind)
@@ -137,8 +137,8 @@ do $$ declare new_program uuid; ex_owner uuid; begin
   from program_day_exercises pde join program_days pd on pd.id = pde.day_id join exercises e on e.id = pde.exercise_id
   where pd.program_id = new_program;
   if not exists (select 1 from program_day_exercises pde join program_days pd on pd.id = pde.day_id
-                 where pd.program_id = new_program and pde.template ->> 'method' = 'top_backoff') then
-    raise exception 'ÉCHEC : l''import doit copier la méthode propre à chaque jour'; end if;
+                 where pd.program_id = new_program and pde.template ->> 'method' = 'top_backoff' and pde.priority) then
+    raise exception 'ÉCHEC : l''import doit copier la méthode et l''étoile de chaque exercice du jour'; end if;
   if ex_owner is distinct from 'aaaaaaaa-0000-0000-0000-000000000001'::uuid then
     raise exception 'ÉCHEC : l''import doit réutiliser l''exercice public de A'; end if;
   if (select count(*) from user_exercises where user_id = 'cccccccc-0000-0000-0000-000000000003') <> 1 then
@@ -244,6 +244,16 @@ do $$ begin
     raise exception 'ÉCHEC : un utilisateur ne doit pas pouvoir vider les alarmes';
   exception when insufficient_privilege then null; end;
   insert into rest_alarms (user_id, fire_at, title) values ('bbbbbbbb-0000-0000-0000-000000000002', now(), 'Repos terminé');
+end $$;
+
+-- ─── Temps disponible : valeurs autorisées ───
+select set_config('role', 'postgres', true);
+do $$ begin
+  begin
+    insert into public.workouts (id, user_id, name, started_at, status, time_limit)
+      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 25);
+    raise exception 'ÉCHEC : un temps de 25 min doit être refusé';
+  exception when check_violation then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───

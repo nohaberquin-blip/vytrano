@@ -91,6 +91,12 @@ export async function setDayExerciseTemplate(id: string, template: SetTemplate |
   if (item) await repo.put('program_day_exercises', { ...item, template })
 }
 
+/** Étoile « prioritaire » : exercice gardé quand la séance est raccourcie. */
+export async function setDayExercisePriority(id: string, priority: boolean): Promise<void> {
+  const item = await db.program_day_exercises.get(id)
+  if (item) await repo.put('program_day_exercises', { ...item, priority })
+}
+
 export async function removeDayExercise(id: string) {
   await repo.remove('program_day_exercises', id)
 }

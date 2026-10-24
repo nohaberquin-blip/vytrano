@@ -61,6 +61,8 @@ export interface ProgramDayExercise {
   position: number
   /** Méthode propre à ce jour ; absente = méthode de la fiche. */
   template?: SetTemplate | null
+  /** Gardé en priorité quand la séance est raccourcie (temps limité). */
+  priority?: boolean
   updated_at?: string
 }
 
@@ -74,6 +76,8 @@ export interface Workout {
   started_at: string
   finished_at: string | null
   status: WorkoutStatus
+  /** Temps disponible choisi (minutes) ; absent = séance complète. */
+  time_limit?: number | null
   updated_at?: string
 }
 
