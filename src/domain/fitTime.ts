@@ -3,6 +3,9 @@ import { restSeconds } from './rest'
 import type { UserExercise, WorkoutSet } from './types'
 
 export const TIME_CHOICES = [90, 60, 45, 30, 20] as const
+/** Bornes du temps libre (minutes). */
+export const TIME_MIN = 10
+export const TIME_MAX = 180
 
 /** Un exercice du jour (dans l'ordre) avec ses séries prévues. `key` = ligne du jour (un exercice peut y être deux fois). */
 export interface FitExercise { key: string; exerciseId: string; priority: boolean; sets: WorkoutSet[] }

@@ -616,7 +616,7 @@ alter table public.program_day_exercises
   add column if not exists priority boolean not null default false;
 
 alter table public.workouts
-  add column if not exists time_limit smallint check (time_limit in (20, 30, 45, 60, 90));
+  add column if not exists time_limit smallint check (time_limit between 10 and 180);
 
 -- Import d'un programme partagé : l'étoile « prioritaire » est copiée aussi.
 create or replace function public.import_program(code text) returns uuid

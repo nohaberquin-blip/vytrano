@@ -246,13 +246,13 @@ do $$ begin
   insert into rest_alarms (user_id, fire_at, title) values ('bbbbbbbb-0000-0000-0000-000000000002', now(), 'Repos terminé');
 end $$;
 
--- ─── Temps disponible : valeurs autorisées ───
+-- ─── Temps disponible : entre 10 et 180 min ───
 select set_config('role', 'postgres', true);
 do $$ begin
   begin
     insert into public.workouts (id, user_id, name, started_at, status, time_limit)
-      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 25);
-    raise exception 'ÉCHEC : un temps de 25 min doit être refusé';
+      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 5);
+    raise exception 'ÉCHEC : un temps de 5 min doit être refusé';
   exception when check_violation then null; end;
 end $$;
 

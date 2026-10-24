@@ -291,3 +291,4 @@ a { color: inherit; }
 .time-changes .removed { text-decoration: line-through; color: var(--muted); }
 .star { font-size: 20px; color: var(--muted); }
 .star.on { color: var(--carbs); }
+.time-field .row .input { max-width: 120px; }

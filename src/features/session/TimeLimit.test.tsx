@@ -54,3 +54,25 @@ test('Commencer avec 20 min : séance adaptée et mention pendant la séance', a
   expect(w.time_limit).toBe(20)
   expect(await db.workout_sets.where('workout_id').equals(w.id).count()).toBeLessThan(24)
 })
+
+test('temps libre : saisie de 35 min, bornes 10 à 180', async () => {
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '⏱ Temps limité ?' }))
+  const field = screen.getByLabelText('Temps disponible (minutes)')
+  await userEvent.type(field, '5')
+  expect(screen.getByText('Entre 10 et 180 min')).toBeInTheDocument()
+  await userEvent.clear(field)
+  await userEvent.type(field, '35')
+  expect(await screen.findByText(/Séance adaptée : ~\d+ min/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '30 min' })).toHaveAttribute('aria-pressed', 'false')
+  await userEvent.click(screen.getByRole('button', { name: 'Commencer' }))
+  await screen.findByText('Séance adaptée à 35 min')
+  expect((await db.workouts.toArray())[0].time_limit).toBe(35)
+})
+
+test('une proposition remplit le champ', async () => {
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '⏱ Temps limité ?' }))
+  await userEvent.click(screen.getByRole('button', { name: '45 min' }))
+  expect(screen.getByLabelText('Temps disponible (minutes)')).toHaveValue('45')
+})
