@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010, 011 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -254,6 +254,32 @@ do $$ begin
       values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 5);
     raise exception 'ÉCHEC : un temps de 5 min doit être refusé';
   exception when check_violation then null; end;
+end $$;
+
+-- ─── Mon cycle : règles privées, durée 2 à 10 jours, allègement connu ───
+select set_config('role', 'postgres', true);
+insert into public.periods (id, user_id, start, days)
+  values ('acacacac-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-01', 5);
+do $$ begin
+  begin
+    insert into public.periods (id, user_id, start, days) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-11-01', 1);
+    raise exception 'ÉCHEC : des règles d''un jour doivent être refusées';
+  exception when check_violation then null; end;
+  begin
+    insert into public.workouts (id, user_id, name, started_at, status, lightened)
+      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'RLS', now(), 'in_progress', 'x');
+    raise exception 'ÉCHEC : un allègement inconnu doit être refusé';
+  exception when check_violation then null; end;
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from periods where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit pas voir les règles de A'; end if;
+  begin
+    insert into periods (id, user_id, start, days) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-12-01', 5);
+    raise exception 'ÉCHEC : B ne doit pas écrire les règles de A';
+  exception when insufficient_privilege then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
