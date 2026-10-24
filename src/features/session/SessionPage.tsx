@@ -21,6 +21,12 @@ function methodLabel(item: ProgramDayExercise | undefined, fiche: UserExercise |
   return t.method === 'classic' ? undefined : METHOD_LABELS[t.method]
 }
 import { ExerciseCard } from './ExerciseCard'
+import { RestBar } from './RestBar'
+import { useRestTimer } from './useRestTimer'
+import { readRestSettings, useRestSettings } from './restSettings'
+import { unlockAudio } from './beep'
+import { restSeconds } from '../../domain/rest'
+import { useWakeLock } from './useWakeLock'
 
 export function SessionPage() {
   const userId = useUserId()
@@ -136,16 +142,52 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   }))), [userId, exerciseIds.join(), workout.program_day_id])
 
   const remaining = sets.filter((s) => !s.done).length
+  const timer = useRestTimer(workout.id)
+  const [settings] = useRestSettings()
+  useWakeLock(settings.wakeLock)
+  const { show } = useUnit()
+
+  // Ordre de la séance : exercices dans l'ordre affiché, séries par position.
+  const ordered = (meta ?? []).flatMap((m) => sets.filter((s) => s.exercise_id === m.id).sort((a, b) => a.position - b.position))
+
+  /** Série suivante à faire : la suite du même exercice, puis les exercices suivants, puis ce qui reste. */
+  function nextAfter(done: WorkoutSet, list: WorkoutSet[]): WorkoutSet | undefined {
+    const i = list.findIndex((s) => s.id === done.id)
+    return [...list.slice(i + 1), ...list.slice(0, i)].find((s) => !s.done)
+  }
+
+  function label(s: WorkoutSet): string {
+    const m = meta?.find((x) => x.id === s.exercise_id)
+    const rank = sets.filter((x) => x.exercise_id === s.exercise_id && x.position <= s.position).length
+    return `${m?.name ?? '…'} · série ${rank} · ${show(s.weight)} × ${s.target_reps ?? 'max'}`
+  }
+
+  async function update(s: WorkoutSet) {
+    const before = sets.find((x) => x.id === s.id)
+    if (before && !before.done && s.done && readRestSettings().auto) {
+      unlockAudio()
+      const list = ordered.map((x) => (x.id === s.id ? s : x))
+      const next = nextAfter(s, list)
+      const fiche = meta?.find((m) => m.id === s.exercise_id)?.fiche
+      const seconds = restSeconds(s, next, fiche)
+      if (seconds !== null && next) timer.start(s.id, seconds, label(next))
+    }
+    if (before?.done && !s.done && timer.rest?.setId === s.id) timer.stop()
+    await updateSet(s)
+  }
 
   async function finish() {
     if (remaining > 0 && !confirm(`${remaining} série${remaining > 1 ? 's' : ''} non validée${remaining > 1 ? 's' : ''}. Terminer quand même ?`)) return
     // Posé avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
     sessionStorage.setItem('muscu.finished', '1')
+    timer.stop()
     await finishWorkout(workout.id)
   }
 
   async function abandon() {
-    if (confirm('Abandonner cette séance ? Elle ne sera pas enregistrée.')) await abandonWorkout(workout.id)
+    if (!confirm('Abandonner cette séance ? Elle ne sera pas enregistrée.')) return
+    timer.stop()
+    await abandonWorkout(workout.id)
   }
 
   return (
@@ -156,10 +198,11 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}
           methodLabel={methodLabel(m.item, m.fiche)}
           sets={sets.filter((s) => s.exercise_id === m.id)}
-          onUpdate={(s) => updateSet(s)} onAddSet={() => addSet(workout.id, m.id)} />
+          onUpdate={(s) => void update(s)} onAddSet={() => addSet(workout.id, m.id)} />
       ))}
       <button className="btn primary block big" onClick={finish}>Terminer la séance</button>
       <button className="btn ghost block" style={{ marginTop: 8, color: 'var(--danger)' }} onClick={abandon}>Abandonner</button>
+      {timer.rest && <RestBar {...timer} />}
     </section>
   )
 }

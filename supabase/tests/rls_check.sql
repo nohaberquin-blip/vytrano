@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 007 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -215,6 +215,16 @@ do $$ begin
     insert into weight_entries (id, user_id, date, weight_kg) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-10-24', 80);
     raise exception 'ÉCHEC : B ne doit pas écrire les pesées de A';
   exception when insufficient_privilege then null; end;
+end $$;
+
+-- ─── Repos de base : bornes ───
+select set_config('role', 'postgres', true);
+do $$ begin
+  begin
+    insert into public.user_exercises (id, user_id, exercise_id, rest_seconds)
+      values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000005', 5);
+    raise exception 'ÉCHEC : un repos de 5 s doit être refusé';
+  exception when check_violation then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
