@@ -34,7 +34,7 @@ Adresse actuelle : **https://vytrano.vercel.app** (projet Vercel `xoly/vytrano`)
 
 Pour publier une nouvelle version, depuis le dossier du projet :
 ```
-npx vercel@latest deploy --prod --yes --build-env VITE_SUPABASE_URL=<url> --build-env VITE_SUPABASE_ANON_KEY=<clé publique>
+npx vercel@latest deploy --prod --yes --build-env VITE_SUPABASE_URL=<url> --build-env VITE_SUPABASE_ANON_KEY=<clé publique> --build-env VITE_VAPID_PUBLIC_KEY=<clé VAPID publique>
 ```
 (même valeurs que `.env.local` ; `npx vercel@latest login` si l'outil demande de se connecter).
 
