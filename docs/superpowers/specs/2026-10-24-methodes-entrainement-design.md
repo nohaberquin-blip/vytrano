@@ -27,7 +27,7 @@ prévues exprimées en pourcentage d'une **charge de référence**.
 type SetKind =
   | 'warmup'    // ÉCHAUF.  — ne compte pas
   | 'work'      // TRAVAIL  — compte
-  | 'top'       // TOP      — compte
+  | 'top'       // TOP-SET  — compte
   | 'backoff'   // BACK-OFF — compte
   | 'drop'      // DROP     — ne compte pas, rattachée à la série précédente
   | 'restpause' // REPRISE  — ne compte pas (rest-pause et myo-reps), rattachée
@@ -133,7 +133,7 @@ avec ses propres séries.
 - **Programme** : pour chaque exercice d'un jour, un lien « Méthode : identique à la fiche » qui
   ouvre le même éditeur pour définir une méthode propre à ce jour (et revenir à celle de la fiche).
 - **Séance** : en-tête = nom de la méthode + résumé ; une étiquette de type par série
-  (ÉCHAUF., TRAVAIL, TOP, BACK-OFF, DROP, REPRISE, CLUSTER, AMRAP), séries rattachées en retrait ;
+  (ÉCHAUF., TRAVAIL, TOP-SET, BACK-OFF, DROP, REPRISE, CLUSTER, AMRAP), séries rattachées en retrait ;
   champs pré-remplis comme en §6 ; « ＋ Série » ajoute une série du même type que la dernière.
 - **Détail d'une séance** (historique, fil des amis) : affiche les étiquettes.
 

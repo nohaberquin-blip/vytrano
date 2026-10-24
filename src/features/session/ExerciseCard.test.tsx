@@ -35,7 +35,7 @@ describe('selon la méthode', () => {
     expect(screen.getByText('Top set + back-off')).toBeInTheDocument()
     expect(screen.getByText('1 × 5 à 120 kg + 3 × 8 à 102,5 kg')).toBeInTheDocument()
     expect(screen.getByText('ÉCHAUF.')).toBeInTheDocument()
-    expect(screen.getByText('TOP')).toBeInTheDocument()
+    expect(screen.getByText('TOP-SET')).toBeInTheDocument()
     expect(screen.getAllByText('BACK-OFF')).toHaveLength(3)
   })
 

@@ -41,7 +41,7 @@ export const METHOD_LABELS: Record<MethodId, string> = {
 export const KIND_LABELS: Record<SetKind, string> = {
   warmup: 'ÉCHAUF.',
   work: 'TRAVAIL',
-  top: 'TOP',
+  top: 'TOP-SET',
   backoff: 'BACK-OFF',
   drop: 'DROP',
   restpause: 'REPRISE',

@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Interface en français ; étiquettes exactes : ÉCHAUF., TRAVAIL, TOP, BACK-OFF, DROP, REPRISE, CLUSTER, AMRAP.
+- Interface en français ; étiquettes exactes : ÉCHAUF., TRAVAIL, TOP-SET, BACK-OFF, DROP, REPRISE, CLUSTER, AMRAP.
 - Charges stockées en kg ; arrondi par défaut 2,5 ; `rounding ≤ 0` ou absent traité comme 2,5.
 - Valeurs de la spec §4 recopiées à l'identique dans les modèles par défaut.
 - Toute écriture passe par `repo.put` (outbox) ; aucune nouvelle table.
