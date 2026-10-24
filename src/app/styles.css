@@ -245,3 +245,9 @@ a { color: inherit; }
   border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
 }
 .choice input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--text); }
+.periods { grid-template-columns: repeat(4, 1fr); margin: 8px 0; }
+.weight-chart { width: 100%; height: auto; display: block; margin-bottom: 6px; }
+.weight-chart .axis { stroke: var(--line); stroke-width: 1; }
+.weight-chart .label { fill: var(--muted); font-size: 10px; }
+.weight-chart .avg { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.weight-chart .dot { fill: var(--planned); opacity: 0.75; }
