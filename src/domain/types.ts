@@ -58,6 +58,7 @@ export interface Workout {
   id: string
   user_id: string
   program_day_id: string | null
+  name: string
   started_at: string
   finished_at: string | null
   status: WorkoutStatus
