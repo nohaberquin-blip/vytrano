@@ -1,0 +1,53 @@
+import type { Profile } from '../domain/types'
+import { supabase } from './supabase'
+
+const CACHE_KEY = 'muscu.profile'
+
+export function usernameError(name: string): string | null {
+  if (name.trim().length < 3) return '3 caractères minimum'
+  if (name.length > 20) return '20 caractères maximum'
+  if (!/^[a-zA-Z0-9_.]+$/.test(name)) return 'Uniquement lettres sans accent, chiffres, « _ » et « . »'
+  return null
+}
+
+export const isProvisionalUsername = (u: string) => /^user_[0-9a-f]{8}$/.test(u)
+
+export function profileErrorMessage(error: { code?: string; message: string }): string {
+  if (error.code === '23505') return 'Ce pseudo est déjà pris'
+  if (error.code === '23514') return 'Pseudo invalide'
+  return 'Impossible d’enregistrer. Vérifie ta connexion.'
+}
+
+export function cachedProfile(): Profile | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    return raw ? (JSON.parse(raw) as Profile) : null
+  } catch {
+    return null
+  }
+}
+
+function cacheProfile(p: Profile | null) {
+  try {
+    if (p) localStorage.setItem(CACHE_KEY, JSON.stringify(p))
+    else localStorage.removeItem(CACHE_KEY)
+  } catch { /* stockage indisponible : on se passe du cache */ }
+}
+
+export async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles').select('user_id, username, display_name, share_workouts, unit').eq('user_id', userId).maybeSingle()
+  if (error) return cachedProfile()
+  cacheProfile(data as Profile | null)
+  return data as Profile | null
+}
+
+/** Les profils s'écrivent directement sur le serveur (réseau requis). */
+export async function updateProfile(userId: string, changes: Partial<Omit<Profile, 'user_id'>>) {
+  const { error } = await supabase.from('profiles').update({ ...changes, updated_at: new Date().toISOString() }).eq('user_id', userId)
+  return { error }
+}
+
+export function clearProfileCache() {
+  cacheProfile(null)
+}
