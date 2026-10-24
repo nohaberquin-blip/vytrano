@@ -121,3 +121,33 @@ export interface WeeklyGoal {
   sessions: number
   updated_at?: string
 }
+
+export type Sex = 'male' | 'female' | 'unspecified'
+export type Activity = 'sedentary' | 'light' | 'active' | 'very_active'
+export type Goal = 'bulk' | 'cut' | 'maintain' | 'recomp' | 'strength'
+
+/** Fiche personnelle privée ; id = user_id. Le poids vient de la dernière pesée. */
+export interface BodyProfile {
+  id: string
+  user_id: string
+  sex: Sex | null
+  birth_date: string | null
+  height_cm: number | null
+  activity: Activity | null
+  sessions_per_week: number | null
+  goal: Goal | null
+  /** Réglages manuels : null = valeur conseillée. */
+  kcal_override: number | null
+  protein_per_kg: number | null
+  fat_pct: number | null
+  updated_at?: string
+}
+
+/** Une pesée par jour au plus. */
+export interface WeightEntry {
+  id: string
+  user_id: string
+  date: string
+  weight_kg: number
+  updated_at?: string
+}
