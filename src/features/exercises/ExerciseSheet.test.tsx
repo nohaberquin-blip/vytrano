@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ExerciseSheet } from './ExerciseSheet'
+import { WithUser } from '../../test/auth'
 import type { Exercise, UserExercise } from '../../domain/types'
 
 const exercise: Exercise = { id: 'e', owner_id: null, name: 'Squat', muscle_group: 'Jambes' }
@@ -9,7 +10,7 @@ const fiche: UserExercise = { id: 'f', user_id: 'u', exercise_id: 'e', current_w
 function setup() {
   const save = vi.fn().mockResolvedValue(undefined)
   const onClose = vi.fn()
-  render(<ExerciseSheet exercise={exercise} fiche={fiche} save={save} onClose={onClose} />)
+  render(<WithUser><ExerciseSheet exercise={exercise} fiche={fiche} save={save} onClose={onClose} /></WithUser>)
   return { save, onClose }
 }
 
