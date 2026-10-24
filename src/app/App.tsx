@@ -12,6 +12,7 @@ import { isProvisionalUsername } from '../data/profile'
 import { supabaseConfigured } from '../data/supabase'
 import type { ReactNode } from 'react'
 import { UnitContext } from './units'
+import { SyncBadge } from './SyncBadge'
 import { useIncomingRequests } from '../features/friends/useIncomingRequests'
 
 export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; badges?: Record<string, number> }) {
@@ -49,7 +50,7 @@ function Gate() {
   if (location.pathname === '/bienvenue') return <Navigate to="/" replace />
   return (
     <UnitContext.Provider value={profile?.unit ?? 'kg'}>
-      <AppRoutes badges={{ '/amis': incoming }} />
+      <AppRoutes badges={{ '/amis': incoming }} headerExtra={<SyncBadge />} />
     </UnitContext.Provider>
   )
 }
