@@ -94,3 +94,13 @@ test('séance top set + back-off reprise avec ses types ; ＋ Série copie le ty
   const after = await db.workout_sets.where('workout_id').equals(w.id).sortBy('position')
   expect(after.map((s) => s.kind)).toEqual(['top', 'backoff', 'backoff', 'backoff', 'backoff'])
 })
+
+test('mode manuel : terminer une séance réussie ne change pas la référence', async () => {
+  const day = await setupDay(60)
+  const fiche = (await db.user_exercises.where('exercise_id').equals('squat').first())!
+  await db.user_exercises.put({ ...fiche, auto_progression: false })
+  const w = await startWorkout('u', day)
+  for (const s of await db.workout_sets.where('workout_id').equals(w.id).toArray()) await updateSet({ ...s, done: true })
+  await finishWorkout(w.id)
+  expect((await db.user_exercises.where('exercise_id').equals('squat').first())?.current_weight).toBe(60)
+})
