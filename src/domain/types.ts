@@ -92,3 +92,32 @@ export interface WorkoutSet {
 }
 
 export const DEFAULT_FICHE = { current_weight: 0, sets: 3, target_reps: 10, increment: 2.5 } as const
+
+/** Jours d'entraînement de l'utilisateur (1 = lundi … 7 = dimanche) ; id = user_id. */
+export interface TrainingSchedule {
+  id: string
+  user_id: string
+  weekdays: number[]
+  /** Date d'activation du calendrier : aucun jour avant n'est « manqué ». */
+  since: string
+  updated_at?: string
+}
+
+/** Exception sur une date : séance ajoutée (`train`) ou jour passé en repos (`rest`, éventuellement reporté). */
+export interface ScheduleOverride {
+  id: string
+  user_id: string
+  date: string
+  kind: 'train' | 'rest'
+  moved_to: string | null
+  updated_at?: string
+}
+
+/** Objectif de séances d'une semaine précise (week_start = lundi). */
+export interface WeeklyGoal {
+  id: string
+  user_id: string
+  week_start: string
+  sessions: number
+  updated_at?: string
+}
