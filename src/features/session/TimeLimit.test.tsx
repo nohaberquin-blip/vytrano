@@ -76,3 +76,27 @@ test('une proposition remplit le champ', async () => {
   await userEvent.click(screen.getByRole('button', { name: '45 min' }))
   expect(screen.getByLabelText('Temps disponible (minutes)')).toHaveValue('45')
 })
+
+test('rien à retirer mais trop long : pas de « tient », mais « Au plus court »', async () => {
+  // 6 exercices prioritaires à 2 séries : rien ne peut être réduit, et c'est plus long que 10 min.
+  for (const de of await db.program_day_exercises.toArray()) await db.program_day_exercises.put({ ...de, priority: true })
+  for (const f of await db.user_exercises.toArray()) await db.user_exercises.put({ ...f, sets: 2 })
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '⏱ Temps limité ?' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Temps disponible (minutes)' }), '10')
+  expect(await screen.findByText(/Au plus court : ~\d+ min/)).toBeInTheDocument()
+  expect(screen.queryByText(/Ta séance tient/)).not.toBeInTheDocument()
+})
+
+test('temps choisi mais rien à adapter : séance complète, sans mention', async () => {
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '⏱ Temps limité ?' }))
+  await userEvent.click(screen.getByRole('button', { name: '90 min' }))
+  await screen.findByText(/Ta séance tient/)
+  await userEvent.click(screen.getByRole('button', { name: 'Commencer' }))
+  await screen.findByRole('button', { name: 'Terminer la séance' })
+  expect(screen.queryByText(/Séance adaptée à/)).not.toBeInTheDocument()
+  const w = (await db.workouts.toArray())[0]
+  expect(w.time_limit ?? null).toBeNull()
+  await waitFor(async () => expect(await db.workout_sets.where('workout_id').equals(w.id).count()).toBe(24))
+})

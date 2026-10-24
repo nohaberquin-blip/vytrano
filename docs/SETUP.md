@@ -32,6 +32,10 @@
 
 Adresse actuelle : **https://vytrano.vercel.app** (projet Vercel `xoly/vytrano`).
 
+**Avant de publier**, exécuter dans Supabase toute nouvelle migration (par exemple `010_temps_disponible.sql`)
+puis `tests/rls_check.sql` (« RLS OK »). Sinon, l'app envoie des colonnes que la base ne connaît pas encore
+et la synchronisation reste bloquée jusqu'à ce que la migration soit faite.
+
 Pour publier une nouvelle version, depuis le dossier du projet :
 ```
 npx vercel@latest deploy --prod --yes --build-env VITE_SUPABASE_URL=<url> --build-env VITE_SUPABASE_ANON_KEY=<clé publique> --build-env VITE_VAPID_PUBLIC_KEY=<clé VAPID publique>

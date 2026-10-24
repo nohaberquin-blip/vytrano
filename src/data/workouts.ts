@@ -51,15 +51,17 @@ export async function previewWorkout(userId: string, day: ProgramDay, minutes: n
 }
 
 async function createWorkout(userId: string, day: ProgramDay, minutes: number | null): Promise<Workout> {
+  const id = crypto.randomUUID()
+  const { exercises, fiches } = await planWorkout(userId, day, id)
+  const fit = minutes ? fitToTime(exercises, fiches, minutes) : null
+  // time_limit seulement si la séance a vraiment été raccourcie.
   const workout = await repo.put<Workout>('workouts', {
-    id: crypto.randomUUID(), user_id: userId, program_day_id: day.id, name: day.name,
+    id, user_id: userId, program_day_id: day.id, name: day.name,
     started_at: new Date().toISOString(), finished_at: null, status: 'in_progress',
-    ...(minutes ? { time_limit: minutes } : {}),
+    ...(fit?.changed ? { time_limit: minutes } : {}),
   })
-  const { exercises, fiches } = await planWorkout(userId, day, workout.id)
-  const kept = minutes ? fitToTime(exercises, fiches, minutes).exercises : exercises
   let position = 0
-  for (const s of kept.flatMap((e) => e.sets)) await repo.put('workout_sets', { ...s, position: position++ })
+  for (const s of (fit?.exercises ?? exercises).flatMap((e) => e.sets)) await repo.put('workout_sets', { ...s, position: position++ })
   return workout
 }
 

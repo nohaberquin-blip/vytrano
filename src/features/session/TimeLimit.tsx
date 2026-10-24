@@ -68,11 +68,11 @@ export function TimeLimit({ day, minutes, onChange }: { day: ProgramDay; minutes
       </label>
       {invalid && <p className="error">Entre {TIME_MIN} et {TIME_MAX} min</p>}
       {minutes && !r && <p className="muted small">Calcul…</p>}
-      {r && !r.changed && <p>Ta séance tient en ~{mins(r.fullSeconds)} min</p>}
+      {r && !r.changed && !r.minimum && <p>Ta séance tient en ~{mins(r.fullSeconds)} min</p>}
+      {r && r.minimum && <p className="muted small">Au plus court : ~{mins(r.seconds)} min</p>}
       {r && r.changed && (
         <>
           <p><strong>Séance adaptée : ~{mins(r.seconds)} min</strong> <span className="muted">au lieu de ~{mins(r.fullSeconds)}</span></p>
-          {r.minimum && <p className="muted small">Au plus court : ~{mins(r.seconds)} min</p>}
           <ul className="time-changes small">
             {r.changes.map((c) => (
               <li key={c.key} className={c.to === 0 ? 'removed' : undefined}>
