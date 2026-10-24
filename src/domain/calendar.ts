@@ -9,7 +9,7 @@ export function toISODate(d: Date): string {
 }
 
 /** Midi local : les changements d'heure ne font jamais changer de jour. */
-function noon(date: string): Date {
+export function noon(date: string): Date {
   const [y, m, d] = date.split('-').map(Number)
   return new Date(y, m - 1, d, 12)
 }
