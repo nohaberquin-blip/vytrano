@@ -1,6 +1,6 @@
 import {
   classicFrom, plannedWeight, presetTemplate, readTemplate, roundTo, setKind, templateError,
-  withWarmup, withoutWarmup, hasWarmup, type PlannedSet,
+  withWarmup, withoutWarmup, hasWarmup, templateSummary, type PlannedSet,
 } from './methods'
 
 const rep = (n: number, s: PlannedSet) => Array.from({ length: n }, () => s)
@@ -73,4 +73,12 @@ test('setKind : une série ancienne sans type est une série de travail', () => 
 test('à 100 %, la charge de référence est reprise telle quelle (jamais arrondie)', () => {
   expect(plannedWeight(61, 100)).toBe(61)
   expect(plannedWeight(61, 90)).toBe(55)
+})
+
+test('résumé d’une méthode : « séries × reps » en classique, sinon son nom', () => {
+  expect(templateSummary(classicFrom({ sets: 3, target_reps: 10 }))).toBe('3 × 10')
+  expect(templateSummary(presetTemplate('classic'))).toBe('4 × 8')
+  expect(templateSummary(withWarmup(presetTemplate('classic')))).toBe('4 × 8 + échauffement')
+  expect(templateSummary(presetTemplate('top_backoff'))).toBe('Top set + back-off')
+  expect(templateSummary({ method: 'classic', sets: [{ kind: 'work', reps: 8, pct: 100 }, { kind: 'work', reps: 6, pct: 100 }] })).toBe('Classique')
 })

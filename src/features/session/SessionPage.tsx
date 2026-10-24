@@ -10,7 +10,7 @@ import {
 import { nextDay } from '../../domain/rotation'
 import type { Workout, WorkoutSet } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
-import { METHOD_LABELS, readTemplate } from '../../domain/methods'
+import { METHOD_LABELS, readTemplate, templateSummary } from '../../domain/methods'
 import type { ProgramDayExercise, UserExercise } from '../../domain/types'
 
 /** Nom de la méthode utilisée (celle du jour, sinon celle de la fiche) ; rien pour une fiche classique. */
@@ -73,7 +73,7 @@ function NextWorkout() {
               <li key={item.id} className="list-item" style={{ cursor: 'default' }}>
                 <span>{exercise?.name ?? '…'}</span>
                 <span className="muted small num">
-                  {fiche ? `${methodLabel(item, fiche) ?? `${fiche.sets} × ${fiche.target_reps}`} · ${show(fiche.current_weight)}` : ''}
+                  {fiche ? `${templateSummary(readTemplate(item.template ?? fiche.template, fiche))} · ${show(fiche.current_weight)}` : ''}
                 </span>
               </li>
             ))}

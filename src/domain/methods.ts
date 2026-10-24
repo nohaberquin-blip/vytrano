@@ -139,3 +139,12 @@ export function plannedWeight(reference: number, pct: number, rounding?: number)
 }
 
 export const setKind = (x: WorkoutSet): SetKind => x.kind ?? 'work'
+
+/** Texte court d'une méthode : « 4 × 8 » pour un classique uniforme, sinon le nom de la méthode. */
+export function templateSummary(t: SetTemplate): string {
+  const main = withoutWarmup(t).sets
+  const uniform = t.method === 'classic' && main.length > 0
+    && main.every((x) => x.kind === 'work' && x.pct === 100 && x.repsMax === undefined && x.reps === main[0].reps)
+  if (!uniform) return METHOD_LABELS[t.method]
+  return `${main.length} × ${main[0].reps ?? 'échec'}${hasWarmup(t) ? ' + échauffement' : ''}`
+}

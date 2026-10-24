@@ -6,6 +6,7 @@ import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { formatWeight } from '../../domain/parseWeight'
 import { BODY_PARTS, toBodyPart } from '../../domain/bodyParts'
+import { readTemplate, templateSummary } from '../../domain/methods'
 import { useUserId } from '../auth/AuthProvider'
 import { ExercisePicker } from './ExercisePicker'
 import { ExerciseSheet } from './ExerciseSheet'
@@ -49,7 +50,7 @@ export function ExercisesPage() {
                     <span>
                       <strong>{exercise!.name}</strong><br />
                       <span className="muted small num">
-                        {fiche.sets} × {fiche.target_reps} · {show(fiche.current_weight)} · +{formatWeight(toDisplay(fiche.increment))}
+                        {templateSummary(readTemplate(fiche.template, fiche))} · {show(fiche.current_weight)} · +{formatWeight(toDisplay(fiche.increment))}
                       </span>
                     </span>
                     <span className="muted">›</span>
