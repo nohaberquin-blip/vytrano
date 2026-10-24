@@ -73,7 +73,7 @@ export function CalendarPage() {
   return (
     <section className="page">
       <div className="row between">
-        <h1 style={{ textTransform: 'capitalize' }}>{title}</h1>
+        <h1>{title.charAt(0).toUpperCase() + title.slice(1)}</h1>
         <button className="btn ghost icon" aria-label="Jours d'entraînement" onClick={() => setEditing(true)}>⚙︎</button>
       </div>
       <div className="row cal-nav">

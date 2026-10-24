@@ -4,7 +4,7 @@ const tabs = [
   { to: '/', label: 'Séance', icon: '▶' },
   { to: '/calendrier', label: 'Calendrier', icon: '▦' },
   { to: '/programmes', label: 'Programmes', icon: '☰' },
-  { to: '/exercices', label: 'Mes exercices', icon: '◆' },
+  { to: '/exercices', label: 'Exercices', icon: '◆' },
   { to: '/amis', label: 'Amis', icon: '●' },
 ]
 
