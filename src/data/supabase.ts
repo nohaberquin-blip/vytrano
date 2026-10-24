@@ -20,7 +20,9 @@ export const peekStartupHash = () => (startupHashUsed ? '' : urlHashAtStartup)
 export function consumeStartupHash() { startupHashUsed = true }
 
 export const supabaseConfigured = Boolean(url && key)
+export const supabaseUrl = url || 'http://localhost:54321'
+export const supabaseKey = key || 'missing-key'
 
-export const supabase = createClient(url || 'http://localhost:54321', key || 'missing-key', {
+export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: true, autoRefreshToken: true, storage: authStorage },
 })

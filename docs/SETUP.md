@@ -2,7 +2,7 @@
 
 1. Dans le projet Supabase, ouvrir **SQL Editor** → **New query**.
 2. Coller et exécuter **en une fois** le contenu de `supabase/setup_all.sql`
-   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `007`).
+   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `008`).
    Sur un projet déjà installé, coller seulement les nouveaux fichiers de `supabase/migrations/`.
 3. Exécuter `supabase/tests/rls_check.sql` : le résultat doit afficher **RLS OK**.
 4. **Authentication → Providers → Email** : pour tester vite, désactiver « Confirm email »
@@ -13,6 +13,20 @@
    VITE_SUPABASE_ANON_KEY=...
    ```
 6. `npm install` puis `npm run dev`.
+
+# Alertes de repos (notifications push)
+
+1. **Database → Extensions** : activer `pg_cron` et `pg_net`.
+2. Clés VAPID : `npx web-push generate-vapid-keys --json`. La clé publique va dans `.env.local`
+   (`VITE_VAPID_PUBLIC_KEY=...`) et dans la commande de build Vercel ; la clé privée ne va **que** dans les
+   secrets de la fonction.
+3. `npx supabase login`, puis :
+   ```
+   npx supabase secrets set --project-ref kkusotincuwjjokyyfjl VAPID_SUBJECT=mailto:... VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=...
+   npx supabase functions deploy rest-alarms --no-verify-jwt --project-ref kkusotincuwjjokyyfjl
+   ```
+4. Coller et exécuter `supabase/migrations/009_repos_cron.sql` (tâche toutes les 5 secondes).
+5. Sur iPhone, les notifications ne marchent que dans l'app ajoutée à l'écran d'accueil (iOS 16.4+).
 
 # Mise en ligne (Vercel)
 

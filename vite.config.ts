@@ -8,6 +8,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Notifications de fin de repos (événements push et clic).
+      workbox: { importScripts: ['push-sw.js'] },
       manifest: {
         name: 'Vytrano',
         short_name: 'Vytrano',

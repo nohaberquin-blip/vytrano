@@ -1,4 +1,5 @@
 import { useRestSettings, type RestSettings } from '../session/restSettings'
+import { RestAlerts } from './RestAlerts'
 
 const SWITCHES: { key: keyof RestSettings; label: string; hint?: string }[] = [
   { key: 'auto', label: 'Repos automatique', hint: 'Le minuteur démarre quand tu valides une série.' },
@@ -13,6 +14,7 @@ export function RestSettingsSection() {
   return (
     <section aria-label="Repos">
       <h2>Repos</h2>
+      <RestAlerts />
       {SWITCHES.map(({ key, label, hint }) => (
         <div key={key}>
           <label className="switch">

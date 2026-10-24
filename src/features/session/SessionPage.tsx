@@ -27,6 +27,7 @@ import { readRestSettings, useRestSettings } from './restSettings'
 import { unlockAudio } from './beep'
 import { restSeconds } from '../../domain/rest'
 import { useWakeLock } from './useWakeLock'
+import { useRestAlarm } from './useRestAlarm'
 
 export function SessionPage() {
   const userId = useUserId()
@@ -145,6 +146,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   const timer = useRestTimer(workout.id)
   const [settings] = useRestSettings()
   useWakeLock(settings.wakeLock)
+  useRestAlarm(userId, timer.rest)
   const { show } = useUnit()
 
   // Ordre de la séance : exercices dans l'ordre affiché, séries par position.
