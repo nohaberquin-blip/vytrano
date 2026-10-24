@@ -8,6 +8,8 @@ import {
   abandonWorkout, addSet, finishWorkout, getInProgress, lastDoneDayId, lastSetsFor, startWorkout, updateSet,
 } from '../../data/workouts'
 import { nextDay } from '../../domain/rotation'
+import { loadCalendarInput } from '../../data/calendar'
+import { buildCalendar, toISODate } from '../../domain/calendar'
 import type { Workout, WorkoutSet } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
 import { METHOD_LABELS, readTemplate, templateSummary } from '../../domain/methods'
@@ -43,7 +45,10 @@ function NextWorkout() {
       exercise: await db.exercises.get(it.exercise_id),
       fiche: await db.user_exercises.where('exercise_id').equals(it.exercise_id).filter((f) => f.user_id === userId).first(),
     })))
-    return { tree, day, rows }
+    const today = toISODate(new Date())
+    const calendar = await loadCalendarInput(userId, today)
+    const restDay = !!calendar && buildCalendar(calendar, today, today)[0].state === 'rest'
+    return { tree, day, rows, restDay }
   }, [userId])
 
   if (!data) return null
@@ -58,12 +63,13 @@ function NextWorkout() {
       </section>
     )
   }
-  const { tree, day, rows } = data
+  const { tree, day, rows, restDay } = data
   return (
     <section className="page">
       {justFinished && <div className="banner">Séance enregistrée 💪 Les charges ont été mises à jour.</div>}
       <p className="muted small" style={{ margin: 0 }}>{tree.program.name}</p>
       <h1>{day ? day.name : 'Séance'}</h1>
+      {restDay && <p className="muted">Jour de repos aujourd'hui</p>}
       {!day && <p className="empty">Ce programme n’a pas encore de jour. <Link to="/programmes">Le compléter</Link></p>}
       {day && rows!.length === 0 && <p className="empty">Aucun exercice dans ce jour. <Link to="/programmes">Ajouter des exercices</Link></p>}
       {day && rows!.length > 0 && (
