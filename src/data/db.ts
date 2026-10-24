@@ -12,6 +12,8 @@ export interface OutboxEntry {
   key: string
   row: Record<string, unknown>
   attempts: number
+  /** Utilisateur qui a fait l'écriture : seul lui peut l'envoyer. */
+  user_id: string | null
   /** 1 = refusé définitivement par le serveur, mis de côté (index Dexie : pas de booléen). */
   dead: 0 | 1
 }
@@ -38,6 +40,7 @@ class MuscuDB extends Dexie {
       workout_sets: 'id, workout_id, exercise_id',
       outbox: '++seq, [table+key], dead',
     })
+    this.version(2).stores({ outbox: '++seq, [table+key], dead, user_id' })
   }
 }
 

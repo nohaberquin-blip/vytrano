@@ -72,3 +72,12 @@ test('deux appuis simultanés sur Commencer → une seule séance', async () => 
   expect(await db.workouts.count()).toBe(1)
   expect(await db.workout_sets.count()).toBe(4)
 })
+
+test('double appui sur Terminer → la hausse n’est appliquée qu’une fois', async () => {
+  const day = await setupDay(60)
+  const w = await startWorkout('u', day)
+  for (const s of await db.workout_sets.where('workout_id').equals(w.id).toArray()) await updateSet({ ...s, done: true })
+  await Promise.all([finishWorkout(w.id), finishWorkout(w.id)])
+  await finishWorkout(w.id)
+  expect((await db.user_exercises.where('exercise_id').equals('squat').first())?.current_weight).toBe(62.5)
+})

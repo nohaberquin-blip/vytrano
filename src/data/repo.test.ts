@@ -1,11 +1,12 @@
 import { db } from './db'
-import { repo, pull, type PullSource } from './repo'
+import { repo, pull, setCurrentUser, type PullSource } from './repo'
 import type { UserExercise } from '../domain/types'
 
 const fiche = (w: number, updated_at?: string): UserExercise =>
   ({ id: 'f1', user_id: 'u', exercise_id: 'e', current_weight: w, sets: 3, target_reps: 10, increment: 2.5, updated_at })
 
 beforeEach(async () => {
+  setCurrentUser('u')
   await Promise.all(db.tables.map((t) => t.clear()))
 })
 
@@ -58,4 +59,32 @@ test('pull supprime les lignes locales absentes du serveur (sauf en attente)', a
   await pull('u', source({}))
   expect(await db.user_exercises.get('f1')).toBeUndefined()
   expect(await db.user_exercises.get('f9')).toBeDefined()
+})
+
+test('le code de partage n’est jamais renvoyé par le client', async () => {
+  await repo.put('programs', { id: 'p', owner_id: 'u', name: 'A', is_active: true, share_code: 'K7QF2M9X' })
+  const [entry] = await db.outbox.toArray()
+  expect('share_code' in entry.row).toBe(false)
+  expect((await db.programs.get('p'))?.share_code).toBe('K7QF2M9X')
+})
+
+test('pull ne supprime pas une ligne écrite pendant qu’il tourne', async () => {
+  const src: PullSource = {
+    fetch: async (table) => {
+      if (table === 'workout_sets') {
+        // Pendant le pull : une série est créée puis déjà envoyée (plus dans l'outbox).
+        await db.workout_sets.put({ id: 's-new', workout_id: 'w', exercise_id: 'e', position: 0, target_reps: 8, reps: 8, weight: 60, done: false, updated_at: new Date().toISOString() })
+      }
+      return []
+    },
+  }
+  await pull('u', src)
+  expect(await db.workout_sets.get('s-new')).toBeDefined()
+})
+
+test('pull ne supprime pas une ligne refusée par le serveur (entrée « dead »)', async () => {
+  await repo.put('user_exercises', fiche(80))
+  await db.outbox.toCollection().modify({ dead: 1 })
+  await pull('u', source({}))
+  expect(await db.user_exercises.get('f1')).toBeDefined()
 })

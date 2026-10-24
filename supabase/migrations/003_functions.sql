@@ -1,8 +1,9 @@
 -- 003 — Fonctions appelées par l'app et vue du fil d'amis
 
 -- Génère (une seule fois) le code de partage d'un programme qu'on possède.
+-- Sur Supabase, pgcrypto (gen_random_bytes) est installé dans le schéma « extensions ».
 create function public.share_program(program_id uuid) returns text
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   code text;
 begin
@@ -18,24 +19,45 @@ begin
 end $$;
 
 -- Copie un programme partagé chez l'appelant et crée les fiches manquantes.
+-- Les exercices perso de l'auteur sont copiés chez l'appelant : la copie reste
+-- indépendante, même si l'auteur supprime ses exercices ou son compte.
 create function public.import_program(code text) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
   src programs;
   new_program uuid := gen_random_uuid();
   d record;
+  ex record;
   new_day uuid;
+  new_ex uuid;
+  ex_map jsonb := '{}';
 begin
   if auth.uid() is null then raise exception 'Non connecté'; end if;
   select * into src from programs where share_code = upper(trim(code));
   if not found then raise exception 'Code introuvable'; end if;
+
+  for ex in
+    select distinct e.id, e.name, e.muscle_group
+    from exercises e
+    join program_day_exercises pde on pde.exercise_id = e.id
+    join program_days pd on pd.id = pde.day_id
+    where pd.program_id = src.id and e.owner_id is not null and e.owner_id <> auth.uid()
+  loop
+    select id into new_ex from exercises where owner_id = auth.uid() and lower(name) = lower(ex.name) limit 1;
+    if new_ex is null then
+      new_ex := gen_random_uuid();
+      insert into exercises (id, owner_id, name, muscle_group) values (new_ex, auth.uid(), ex.name, ex.muscle_group);
+    end if;
+    ex_map := ex_map || jsonb_build_object(ex.id::text, new_ex::text);
+  end loop;
 
   insert into programs (id, owner_id, name, is_active) values (new_program, auth.uid(), src.name, false);
   for d in select * from program_days where program_id = src.id order by position loop
     new_day := gen_random_uuid();
     insert into program_days (id, program_id, position, name) values (new_day, new_program, d.position, d.name);
     insert into program_day_exercises (id, day_id, exercise_id, position)
-      select gen_random_uuid(), new_day, exercise_id, position from program_day_exercises where day_id = d.id;
+      select gen_random_uuid(), new_day, coalesce((ex_map ->> exercise_id::text)::uuid, exercise_id), position
+      from program_day_exercises where day_id = d.id;
   end loop;
 
   insert into user_exercises (id, user_id, exercise_id)
@@ -84,3 +106,13 @@ join profiles p on p.user_id = w.user_id
 where w.status = 'done' and w.user_id <> auth.uid();
 
 grant select on public.friend_feed to authenticated;
+
+-- Droits d'exécution : jamais pour les visiteurs non connectés.
+revoke execute on function public.share_program(uuid) from public, anon;
+revoke execute on function public.import_program(text) from public, anon;
+revoke execute on function public.delete_my_account() from public, anon;
+revoke execute on function public.search_profiles(text) from public, anon;
+grant execute on function public.share_program(uuid) to authenticated;
+grant execute on function public.import_program(text) to authenticated;
+grant execute on function public.delete_my_account() to authenticated;
+grant execute on function public.search_profiles(text) to authenticated;

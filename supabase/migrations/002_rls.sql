@@ -85,3 +85,10 @@ create policy reactions_insert on public.reactions for insert to authenticated
   with check (user_id = auth.uid()
               and exists (select 1 from workouts w where w.id = workout_id and public.can_see_workouts(w.user_id)));
 create policy reactions_delete on public.reactions for delete to authenticated using (user_id = auth.uid());
+
+-- is_friend n'est utilisé que depuis can_see_workouts (qui s'exécute en tant que propriétaire) :
+-- l'appeler directement permettrait de reconstituer le graphe d'amitiés de tout le monde.
+revoke execute on function public.is_friend(uuid, uuid) from public, anon, authenticated;
+-- can_see_workouts est évaluée par les règles RLS au nom de l'utilisateur connecté.
+revoke execute on function public.can_see_workouts(uuid) from public, anon;
+grant execute on function public.can_see_workouts(uuid) to authenticated;

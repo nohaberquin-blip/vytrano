@@ -4,6 +4,20 @@ import { DEFAULT_FICHE, type UserExercise } from '../domain/types'
 
 type Row = { id: string; updated_at?: string }
 
+let currentUser: string | null = null
+/** Appelé par l'authentification : les écritures sont rattachées à cet utilisateur. */
+export function setCurrentUser(id: string | null) { currentUser = id }
+export const getCurrentUser = () => currentUser
+
+/** Colonnes gérées uniquement par le serveur : jamais renvoyées par le client. */
+const SERVER_OWNED: Partial<Record<SyncedTable, string[]>> = { programs: ['share_code'] }
+
+function outboxRow(table: SyncedTable, row: Record<string, unknown>) {
+  const out = { ...row }
+  for (const col of SERVER_OWNED[table] ?? []) delete out[col]
+  return out
+}
+
 /** Toute écriture utilisateur passe par ici : base locale d'abord, puis file d'envoi. */
 export const repo = {
   async put<T extends Row>(table: SyncedTable, row: T): Promise<T> {
@@ -16,8 +30,9 @@ export const repo = {
         .where('[table+key]').equals([table, row.id])
         .filter((e) => e.op === 'upsert' && !e.dead)
         .first()
-      if (pending) await db.outbox.update(pending.seq!, { row: stamped })
-      else await db.outbox.add({ table, op: 'upsert', key: row.id, row: stamped, attempts: 0, dead: 0 })
+      const sent = outboxRow(table, stamped)
+      if (pending) await db.outbox.update(pending.seq!, { row: sent })
+      else await db.outbox.add({ table, op: 'upsert', key: row.id, row: sent, attempts: 0, dead: 0, user_id: currentUser })
     })
     return stamped
   },
@@ -25,7 +40,7 @@ export const repo = {
   async remove(table: SyncedTable, id: string): Promise<void> {
     await db.transaction('rw', db.table(table), db.outbox, async () => {
       await db.table(table).delete(id)
-      await db.outbox.add({ table, op: 'delete', key: id, row: { id }, attempts: 0, dead: 0 })
+      await db.outbox.add({ table, op: 'delete', key: id, row: { id }, attempts: 0, dead: 0, user_id: currentUser })
     })
   },
 }
@@ -52,6 +67,9 @@ const PULL_ORDER: Array<{ table: SyncedTable; parent?: SyncedTable }> = [
 
 /** Recopie les données serveur de l'utilisateur dans la base locale, sans écraser les écritures en attente. */
 export async function pull(userId: string, source: PullSource = supabaseSource): Promise<void> {
+  // Une ligne écrite après le début du pull peut manquer dans la réponse du serveur
+  // tout en étant déjà sortie de l'outbox : on ne la supprime pas.
+  const startedAt = Date.now()
   const ids: Partial<Record<SyncedTable, string[]>> = {}
   for (const { table, parent } of PULL_ORDER) {
     const remote = await source.fetch(table, userId, parent ? ids[parent] ?? [] : undefined)
@@ -60,8 +78,9 @@ export async function pull(userId: string, source: PullSource = supabaseSource):
     }
     ids[table] = remote.map((r) => r.id)
     await db.transaction('rw', db.table(table), db.outbox, async () => {
+      // Entrées en attente ET refusées : la copie locale est alors la seule qui existe.
       const pendingKeys = new Set(
-        (await db.outbox.where('dead').equals(0).filter((e) => e.table === table).toArray()).map((e) => e.key),
+        (await db.outbox.filter((e) => e.table === table).toArray()).map((e) => e.key),
       )
       const remoteIds = new Set(remote.map((r) => r.id))
       const local = (await db.table(table).toArray()) as Row[]
@@ -69,12 +88,11 @@ export async function pull(userId: string, source: PullSource = supabaseSource):
       const toPut = remote.filter((r) => {
         if (pendingKeys.has(r.id)) return false
         const l = localById.get(r.id)
-        return !l || !l.updated_at || !r.updated_at || r.updated_at >= l.updated_at
+        return !l || !l.updated_at || !r.updated_at || Date.parse(r.updated_at) >= Date.parse(l.updated_at)
       })
-      // Les exercices du catalogue partagé ne sont jamais supprimés localement par erreur :
-      // seules les lignes de l'utilisateur absentes du serveur le sont.
       const toDelete = local
         .filter((l) => !remoteIds.has(l.id) && !pendingKeys.has(l.id))
+        .filter((l) => !l.updated_at || Date.parse(l.updated_at) < startedAt)
         .map((l) => l.id)
       await db.table(table).bulkPut(toPut)
       await db.table(table).bulkDelete(toDelete)

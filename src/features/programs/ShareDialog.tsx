@@ -20,8 +20,10 @@ export function ShareDialog({ programId, onClose }: { programId: string; onClose
       }
       const { data, error } = await supabase.rpc('share_program', { program_id: programId })
       if (cancelled) return
-      if (error) setError('Impossible de générer le code. Vérifie ta connexion.')
-      else setCode(data as string)
+      if (error) { setError('Impossible de générer le code. Vérifie ta connexion.'); return }
+      // Copie locale du code (colonne gérée par le serveur, jamais renvoyée).
+      await db.programs.update(programId, { share_code: data as string })
+      setCode(data as string)
     })()
     return () => { cancelled = true }
   }, [programId])

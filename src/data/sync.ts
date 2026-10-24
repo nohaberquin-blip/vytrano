@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type OutboxEntry, type SyncedTable } from './db'
 import { supabase } from './supabase'
+import { getCurrentUser } from './repo'
 
 type SyncError = { message: string; code?: string } | null
 
@@ -9,17 +10,26 @@ export interface SyncClient {
   delete(table: SyncedTable, ids: string[]): Promise<{ error: SyncError }>
 }
 
-/** Codes Postgres d'erreurs qui ne disparaîtront pas en réessayant (contraintes, droits, types). */
-const isPermanent = (e: NonNullable<SyncError>) => !!e.code && /^(22|23|42)/.test(e.code)
+/**
+ * Codes Postgres d'erreurs qui ne disparaîtront pas en réessayant (contraintes, types, schéma).
+ * 42501 (RLS) n'en fait pas partie : il apparaît aussi quand la session a expiré.
+ */
+const isPermanent = (e: NonNullable<SyncError>) => !!e.code && e.code !== '42501' && /^(22|23|42)/.test(e.code)
 
 export function createSync(client: SyncClient) {
   let running: Promise<void> | null = null
   let retryTimer: ReturnType<typeof setTimeout> | undefined
   let kickTimer: ReturnType<typeof setTimeout> | undefined
 
+  let stopped = false
+
   async function flushOnce(): Promise<boolean> {
+    const userId = getCurrentUser()
+    if (!userId) return true
     for (;;) {
-      const entries = await db.outbox.where('dead').equals(0).sortBy('seq')
+      // Arrêt, déconnexion ou changement de compte : on ne continue pas avec une autre session.
+      if (stopped || getCurrentUser() !== userId) return true
+      const entries = await db.outbox.where('dead').equals(0).filter((e) => e.user_id === userId).sortBy('seq')
       if (entries.length === 0) return true
       // Lot = entrées consécutives de même table et même opération.
       const batch: OutboxEntry[] = [entries[0]]
@@ -58,7 +68,9 @@ export function createSync(client: SyncClient) {
       const ok = await flushOnce().catch(() => false)
       clearTimeout(retryTimer)
       if (!ok) {
-        const first = await db.outbox.where('dead').equals(0).first()
+        const uid = getCurrentUser()
+        const first = await db.outbox.where('dead').equals(0).filter((e) => e.user_id === uid).first()
+        if (!first) return
         const delay = Math.min(2 ** (first?.attempts ?? 1), 60) * 1000
         retryTimer = setTimeout(() => void flush(), delay)
       }
@@ -75,12 +87,14 @@ export function createSync(client: SyncClient) {
 
   /** Lance la synchronisation en continu ; renvoie la fonction d'arrêt. */
   function start(): () => void {
+    stopped = false
     const onOnline = () => void flush()
     window.addEventListener('online', onOnline)
     db.outbox.hook('creating', kick)
     db.outbox.hook('updating', onUpdating)
     void flush()
     return () => {
+      stopped = true
       window.removeEventListener('online', onOnline)
       db.outbox.hook('creating').unsubscribe(kick)
       db.outbox.hook('updating').unsubscribe(onUpdating)
@@ -104,10 +118,11 @@ export const supabaseSyncClient: SyncClient = {
 }
 
 export function useSyncStatus(): { pending: number; failed: number } {
+  const uid = getCurrentUser()
   return useLiveQuery(
     async () => ({
-      pending: await db.outbox.where('dead').equals(0).count(),
-      failed: await db.outbox.where('dead').equals(1).count(),
+      pending: await db.outbox.where('dead').equals(0).filter((e) => e.user_id === uid).count(),
+      failed: await db.outbox.where('dead').equals(1).filter((e) => e.user_id === uid).count(),
     }),
     [],
     { pending: 0, failed: 0 },

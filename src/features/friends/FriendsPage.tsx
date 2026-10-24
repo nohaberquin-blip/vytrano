@@ -12,7 +12,7 @@ export function FriendsPage() {
   const online = useOnline()
   const { count: incoming, refresh: refreshIncoming } = useIncomingRequests()
   const [tab, setTab] = useState<'feed' | 'manage'>('feed')
-  const [feed, setFeed] = useState<FeedEntry[]>(cachedFeed)
+  const [feed, setFeed] = useState<FeedEntry[]>(() => cachedFeed(userId))
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState<FeedEntry | null>(null)
@@ -20,19 +20,19 @@ export function FriendsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const page = await fetchFeed()
+      const page = await fetchFeed(userId)
       setFeed(page)
       setHasMore(page.length === FEED_PAGE)
     } catch { /* hors ligne : on garde le cache */ }
     setLoading(false)
-  }, [])
+  }, [userId])
   useEffect(() => { if (online) void load() }, [online, load])
 
   async function more() {
     const last = feed[feed.length - 1]
     if (!last) return
     try {
-      const page = await fetchFeed(last.finished_at)
+      const page = await fetchFeed(userId, last.finished_at)
       setFeed((f) => [...f, ...page])
       setHasMore(page.length === FEED_PAGE)
     } catch { /* réessaiera */ }

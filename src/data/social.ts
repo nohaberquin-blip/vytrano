@@ -20,22 +20,26 @@ export interface FeedEntry {
 const FEED_CACHE = 'muscu.feed'
 export const FEED_PAGE = 20
 
-export function cachedFeed(): FeedEntry[] {
+/** Le cache est rattaché à un utilisateur : sur un appareil partagé, personne ne voit le fil d'un autre. */
+export function cachedFeed(userId: string): FeedEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(FEED_CACHE) ?? '[]') as FeedEntry[]
+    const cached = JSON.parse(localStorage.getItem(FEED_CACHE) ?? 'null') as { user_id: string; entries: FeedEntry[] } | null
+    return cached?.user_id === userId ? cached.entries : []
   } catch {
     return []
   }
 }
 
-export async function fetchFeed(before?: string): Promise<FeedEntry[]> {
+export function storeFeed(userId: string, entries: FeedEntry[]) {
+  try { localStorage.setItem(FEED_CACHE, JSON.stringify({ user_id: userId, entries })) } catch { /* cache facultatif */ }
+}
+
+export async function fetchFeed(userId: string, before?: string): Promise<FeedEntry[]> {
   let q = supabase.from('friend_feed').select('*').order('finished_at', { ascending: false }).limit(FEED_PAGE)
   if (before) q = q.lt('finished_at', before)
   const { data, error } = await q
   if (error) throw error
-  if (!before) {
-    try { localStorage.setItem(FEED_CACHE, JSON.stringify(data)) } catch { /* cache facultatif */ }
-  }
+  if (!before) storeFeed(userId, data as FeedEntry[])
   return data as FeedEntry[]
 }
 

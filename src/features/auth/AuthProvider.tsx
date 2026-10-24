@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Profile } from '../../domain/types'
 import { db } from '../../data/db'
 import { cachedProfile, clearProfileCache, fetchProfile } from '../../data/profile'
-import { pull } from '../../data/repo'
+import { pull, setCurrentUser } from '../../data/repo'
 import { supabase } from '../../data/supabase'
 import { createSync, supabaseSyncClient } from '../../data/sync'
 
@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const userId = user?.id
   useEffect(() => {
+    setCurrentUser(userId ?? null)
     if (!userId) { setProfile(null); return }
     const cached = cachedProfile()
     if (cached?.user_id === userId) setProfile(cached)

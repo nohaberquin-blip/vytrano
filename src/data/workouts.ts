@@ -55,9 +55,17 @@ export async function addSet(workoutId: string, exerciseId: string): Promise<voi
   await repo.put<WorkoutSet>('workout_sets', { ...model, id: crypto.randomUUID(), position: model.position + 1, done: false })
 }
 
-export async function finishWorkout(workoutId: string): Promise<void> {
+let finishing: Promise<void> | null = null
+
+/** Termine la séance et applique la progression ; sans effet si elle est déjà terminée. */
+export function finishWorkout(workoutId: string): Promise<void> {
+  finishing ??= applyFinish(workoutId).finally(() => { finishing = null })
+  return finishing
+}
+
+async function applyFinish(workoutId: string): Promise<void> {
   const workout = await db.workouts.get(workoutId)
-  if (!workout) return
+  if (!workout || workout.status !== 'in_progress') return
   const sets = await setsOf(workoutId)
   await repo.put('workouts', { ...workout, status: 'done', finished_at: new Date().toISOString() })
   for (const exerciseId of new Set(sets.map((s) => s.exercise_id))) {

@@ -1,5 +1,5 @@
 import { db } from './db'
-import { repo } from './repo'
+import { repo, setCurrentUser } from './repo'
 import { createSync, type SyncClient } from './sync'
 
 const w = (id: string) => ({ id, user_id: 'u', program_day_id: null, name: 'J', started_at: 'x', finished_at: null, status: 'in_progress' as const })
@@ -14,6 +14,7 @@ function fakeClient(fail: () => { message: string; code?: string } | null = () =
 }
 
 beforeEach(async () => {
+  setCurrentUser('u')
   await Promise.all(db.tables.map((t) => t.clear()))
 })
 
@@ -64,4 +65,32 @@ test('un échec ne relance pas immédiatement l’envoi (le délai croissant s�
   await new Promise((r) => setTimeout(r, 900))
   stop()
   expect(calls.length).toBe(1)
+})
+
+test('refus RLS (42501) = transitoire : réessayé, pas abandonné', async () => {
+  await repo.put('workouts', w('w1'))
+  const { client } = fakeClient(() => ({ message: 'new row violates row-level security policy', code: '42501' }))
+  await createSync(client).flush()
+  const [entry] = await db.outbox.toArray()
+  expect(entry).toMatchObject({ dead: 0, attempts: 1 })
+})
+
+test('seules les écritures de l’utilisateur connecté sont envoyées', async () => {
+  setCurrentUser('a')
+  await repo.put('workouts', w('wa'))
+  setCurrentUser('b')
+  await repo.put('workouts', w('wb'))
+  const { client, calls } = fakeClient()
+  await createSync(client).flush()
+  expect(calls.flatMap(([, , rows]) => rows.map((r) => (r as { id: string }).id))).toEqual(['wb'])
+  expect((await db.outbox.toArray()).map((e) => e.key)).toEqual(['wa'])
+})
+
+test('aucun utilisateur connecté → rien n’est envoyé', async () => {
+  setCurrentUser('a')
+  await repo.put('workouts', w('wa'))
+  setCurrentUser(null)
+  const { client, calls } = fakeClient()
+  await createSync(client).flush()
+  expect(calls).toHaveLength(0)
 })
