@@ -63,6 +63,9 @@ const PULL_ORDER: Array<{ table: SyncedTable; parent?: SyncedTable }> = [
   { table: 'program_day_exercises', parent: 'program_days' },
   { table: 'workouts' },
   { table: 'workout_sets', parent: 'workouts' },
+  { table: 'training_schedules' },
+  { table: 'schedule_overrides' },
+  { table: 'weekly_goals' },
 ]
 
 /** Recopie les données serveur de l'utilisateur dans la base locale, sans écraser les écritures en attente. */
@@ -102,6 +105,7 @@ export async function pull(userId: string, source: PullSource = supabaseSource):
 
 const OWNER_COL: Partial<Record<SyncedTable, string>> = {
   user_exercises: 'user_id', programs: 'owner_id', workouts: 'user_id',
+  training_schedules: 'user_id', schedule_overrides: 'user_id', weekly_goals: 'user_id',
 }
 const PARENT_COL: Partial<Record<SyncedTable, string>> = {
   program_days: 'program_id', program_day_exercises: 'day_id', workout_sets: 'workout_id',

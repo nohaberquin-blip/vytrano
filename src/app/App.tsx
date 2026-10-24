@@ -2,6 +2,7 @@ import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { TabBar } from './TabBar'
 import { SessionPage } from '../features/session/SessionPage'
 import { ProgramsPage } from '../features/programs/ProgramsPage'
+import { CalendarPage } from '../features/calendar/CalendarPage'
 import { ExercisesPage } from '../features/exercises/ExercisesPage'
 import { FriendsPage } from '../features/friends/FriendsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
@@ -29,6 +30,7 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
       <main className="content">
         <Routes>
           <Route path="/" element={<SessionPage />} />
+          <Route path="/calendrier" element={<CalendarPage />} />
           <Route path="/programmes" element={<ProgramsPage />} />
           <Route path="/exercices" element={<ExercisesPage />} />
           <Route path="/amis" element={<FriendsPage />} />

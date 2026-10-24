@@ -93,3 +93,14 @@ test('pull convertit l’arrondi (numeric renvoyé en texte) en nombre', async (
   await pull('u', source({ user_exercises: [{ ...fiche(70, '2026-02-01T00:00:00Z'), rounding: '2.50' }] }))
   expect((await db.user_exercises.get('f1'))?.rounding).toBe(2.5)
 })
+
+test('pull recopie les tables du calendrier', async () => {
+  await pull('u', source({
+    training_schedules: [{ id: 'u', user_id: 'u', weekdays: [1, 3], since: '2026-10-01', updated_at: '2026-10-01T00:00:00Z' }],
+    schedule_overrides: [{ id: 'o', user_id: 'u', date: '2026-10-23', kind: 'train', moved_to: null, updated_at: '2026-10-01T00:00:00Z' }],
+    weekly_goals: [{ id: 'g', user_id: 'u', week_start: '2026-10-19', sessions: 4, updated_at: '2026-10-01T00:00:00Z' }],
+  }))
+  expect(await db.training_schedules.get('u')).toMatchObject({ weekdays: [1, 3] })
+  expect(await db.schedule_overrides.get('o')).toMatchObject({ kind: 'train' })
+  expect(await db.weekly_goals.get('g')).toMatchObject({ sessions: 4 })
+})
