@@ -50,7 +50,7 @@ export interface PullSource {
 }
 
 const NUMERIC: Partial<Record<SyncedTable, string[]>> = {
-  user_exercises: ['current_weight', 'increment'],
+  user_exercises: ['current_weight', 'increment', 'rounding'],
   workout_sets: ['weight'],
 }
 
@@ -74,7 +74,7 @@ export async function pull(userId: string, source: PullSource = supabaseSource):
   for (const { table, parent } of PULL_ORDER) {
     const remote = await source.fetch(table, userId, parent ? ids[parent] ?? [] : undefined)
     for (const col of NUMERIC[table] ?? []) {
-      for (const r of remote as Record<string, unknown>[]) r[col] = Number(r[col])
+      for (const r of remote as Record<string, unknown>[]) if (r[col] != null) r[col] = Number(r[col])
     }
     ids[table] = remote.map((r) => r.id)
     await db.transaction('rw', db.table(table), db.outbox, async () => {

@@ -88,3 +88,8 @@ test('pull ne supprime pas une ligne refusée par le serveur (entrée « dead »
   await pull('u', source({}))
   expect(await db.user_exercises.get('f1')).toBeDefined()
 })
+
+test('pull convertit l’arrondi (numeric renvoyé en texte) en nombre', async () => {
+  await pull('u', source({ user_exercises: [{ ...fiche(70, '2026-02-01T00:00:00Z'), rounding: '2.50' }] }))
+  expect((await db.user_exercises.get('f1'))?.rounding).toBe(2.5)
+})

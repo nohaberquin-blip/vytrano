@@ -22,8 +22,8 @@ insert into public.program_days (id, program_id, position, name) values ('ffffff
 insert into public.program_day_exercises (id, day_id, exercise_id, position) values ('ffffffff-0000-0000-0000-000000000008', 'ffffffff-0000-0000-0000-000000000007', 'eeeeeeee-0000-0000-0000-000000000005', 0);
 insert into public.workouts (id, user_id, name, started_at, finished_at, status)
   values ('dddddddd-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000001', 'Jour 1', now() - interval '1 hour', now(), 'done');
-insert into public.workout_sets (id, workout_id, exercise_id, position, target_reps, reps, weight, done)
-  values ('dddddddd-0000-0000-0000-000000000009', 'dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 0, 8, 8, 20, true);
+insert into public.workout_sets (id, workout_id, exercise_id, position, target_reps, reps, weight, done, kind)
+  values ('dddddddd-0000-0000-0000-000000000009', 'dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 0, 8, 8, 20, true, 'top');
 
 -- ─── B, ami de A (partage activé) ───
 select set_config('role', 'authenticated', true),
@@ -31,8 +31,8 @@ select set_config('role', 'authenticated', true),
 do $$ begin
   if not exists (select 1 from workouts where id = 'dddddddd-0000-0000-0000-000000000004') then
     raise exception 'ÉCHEC : B (ami) devrait voir la séance de A'; end if;
-  if not exists (select 1 from workout_sets where workout_id = 'dddddddd-0000-0000-0000-000000000004') then
-    raise exception 'ÉCHEC : B (ami) devrait voir les séries de A'; end if;
+  if not exists (select 1 from workout_sets where workout_id = 'dddddddd-0000-0000-0000-000000000004' and kind = 'top') then
+    raise exception 'ÉCHEC : B (ami) devrait voir les séries de A et leur type'; end if;
   if not exists (select 1 from friend_feed where id = 'dddddddd-0000-0000-0000-000000000004') then
     raise exception 'ÉCHEC : la séance de A devrait être dans le fil de B'; end if;
   insert into reactions (workout_id, user_id) values ('dddddddd-0000-0000-0000-000000000004', 'bbbbbbbb-0000-0000-0000-000000000002');
@@ -89,6 +89,13 @@ end $$;
 -- ─── A : pseudo, recherche, partage du programme, puis coupe le partage des séances ───
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
 do $$ declare code text; code2 text; begin
+  insert into workout_sets (id, workout_id, exercise_id, position, target_reps, reps, weight, done, kind)
+    values (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 1, null, 6, 16, true, 'drop');
+  begin
+    insert into workout_sets (id, workout_id, exercise_id, position, target_reps, reps, weight, done, kind)
+      values (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 2, 8, 8, 20, true, 'nope');
+    raise exception 'ÉCHEC : un type de série inconnu doit être refusé';
+  exception when check_violation then null; end;
   begin
     update profiles set username = 'RLS_LEA' where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
     raise exception 'ÉCHEC : pseudo en double (casse différente) accepté';
