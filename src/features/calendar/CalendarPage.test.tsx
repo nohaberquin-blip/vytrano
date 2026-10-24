@@ -67,6 +67,8 @@ test('détail d’un jour prévu futur : Déplacer puis Annuler le report', asyn
   expect(within(sheet).getByText('Jour B')).toBeInTheDocument()
   expect(within(sheet).queryByRole('button', { name: 'Commencer' })).toBeNull()
   await userEvent.click(within(sheet).getByRole('button', { name: 'Déplacer' }))
+  expect(within(sheet).queryByRole('button', { name: 'lundi 26 octobre' })).toBeNull() // déjà prévu
+  expect(within(sheet).getByRole('button', { name: 'jeudi 22 octobre' })).toBeInTheDocument()
   await userEvent.click(within(sheet).getByRole('button', { name: 'samedi 24 octobre' }))
   expect(await screen.findByRole('button', { name: '23 octobre, reporté' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '24 octobre, prévu' })).toBeInTheDocument()

@@ -23,7 +23,13 @@ export function DaySheet({ day, input, exercises, onClose }: {
   const [moving, setMoving] = useState(false)
   const { today } = input
   const title = longDate(day.date)
-  const run = (action: Promise<void>) => action.then(onClose)
+  const [busy, setBusy] = useState(false)
+  // Une action à la fois : un double appui n'écrit pas deux fois.
+  const run = (action: () => Promise<void>) => {
+    if (busy) return
+    setBusy(true)
+    action().then(onClose, () => setBusy(false))
+  }
 
   async function start() {
     await startWorkout(userId, day.day!)
@@ -31,13 +37,14 @@ export function DaySheet({ day, input, exercises, onClose }: {
   }
 
   if (moving) {
-    const targets = buildCalendar(input, today, addDays(today, 13)).filter((d) => d.date !== day.date && d.state !== 'done')
+    // Seulement des jours de repos : déplacer sur un jour déjà prévu fusionnerait deux séances.
+    const targets = buildCalendar(input, today, addDays(today, 13)).filter((d) => d.state === 'rest')
     return (
       <Sheet title={title} onClose={onClose}>
         <p className="muted">Déplacer la séance au :</p>
         <div className="move-targets">
           {targets.map((d) => (
-            <button key={d.date} className="btn" aria-label={longDate(d.date)} onClick={() => run(moveSession(userId, day.date, d.date))}>
+            <button key={d.date} className="btn" disabled={busy} aria-label={longDate(d.date)} onClick={() => run(() => moveSession(userId, day.date, d.date))}>
               {shortDay(d.date)}
             </button>
           ))}
@@ -56,18 +63,18 @@ export function DaySheet({ day, input, exercises, onClose }: {
           {day.date === today && day.day && <button className="btn primary block" onClick={start}>Commencer</button>}
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn" style={{ flex: 1 }} onClick={() => setMoving(true)}>Déplacer</button>
-            <button className="btn" style={{ flex: 1 }} onClick={() => run(setRest(userId, day.date))}>Passer en repos</button>
+            <button className="btn" style={{ flex: 1 }} disabled={busy} onClick={() => run(() => setRest(userId, day.date))}>Passer en repos</button>
           </div>
         </>
       )}
       {day.state === 'rest' && (day.date >= today
-        ? <button className="btn block" onClick={() => run(addSession(userId, day.date))}>Ajouter une séance ce jour</button>
+        ? <button className="btn block" disabled={busy} onClick={() => run(() => addSession(userId, day.date))}>Ajouter une séance ce jour</button>
         : <p className="muted">Jour de repos</p>)}
       {day.state === 'missed' && <p className="muted">Séance manquée — elle a glissé au prochain jour d'entraînement</p>}
       {day.state === 'moved' && (
         <>
           <p>Séance déplacée au {longDate(day.movedTo!)}</p>
-          <button className="btn block" onClick={() => run(cancelMove(userId, day.date))}>Annuler le report</button>
+          <button className="btn block" disabled={busy} onClick={() => run(() => cancelMove(userId, day.date))}>Annuler le report</button>
         </>
       )}
       {day.state === 'done' && day.workouts.map((w) => <DoneWorkout key={w.id} workout={w} />)}
