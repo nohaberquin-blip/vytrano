@@ -110,7 +110,8 @@ const PARENT_COL: Partial<Record<SyncedTable, string>> = {
 const supabaseSource: PullSource = {
   async fetch(table, userId, parentIds) {
     if (table === 'exercises') {
-      const { data, error } = await supabase.from('exercises').select('*').or(`owner_id.is.null,owner_id.eq.${userId}`)
+      // Catalogue commun : les exercices de tout le monde.
+      const { data, error } = await supabase.from('exercises').select('*')
       if (error) throw error
       return data
     }

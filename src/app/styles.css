@@ -153,3 +153,13 @@ a { color: inherit; }
 .segmented { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 12px; padding: 4px; margin: 20px 0; }
 .segmented button { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 650; }
 .segmented button[aria-pressed='true'] { background: var(--surface); color: var(--text); }
+
+/* Catalogue d'exercices */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin: 0 -16px; padding-left: 16px; padding-right: 16px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.chip.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.group-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; }

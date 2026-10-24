@@ -5,6 +5,7 @@ import { useLive } from '../../data/useLive'
 import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { formatWeight } from '../../domain/parseWeight'
+import { BODY_PARTS, toBodyPart } from '../../domain/bodyParts'
 import { useUserId } from '../auth/AuthProvider'
 import { ExercisePicker } from './ExercisePicker'
 import { ExerciseSheet } from './ExerciseSheet'
@@ -35,21 +36,30 @@ export function ExercisesPage() {
       {rows && rows.length === 0 && (
         <p className="empty">Aucun exercice pour l’instant. Ajoute-en un, ou crée un programme : ses exercices apparaîtront ici.</p>
       )}
-      <ul className="list">
-        {rows?.map(({ fiche, exercise }) => (
-          <li key={fiche.id}>
-            <button className="list-item" onClick={() => setOpenId(fiche.id)}>
-              <span>
-                <strong>{exercise!.name}</strong><br />
-                <span className="muted small num">
-                  {fiche.sets} × {fiche.target_reps} · {show(fiche.current_weight)} · +{formatWeight(toDisplay(fiche.increment))}
-                </span>
-              </span>
-              <span className="muted">›</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {BODY_PARTS.map((part) => {
+        const items = rows?.filter((r) => toBodyPart(r.exercise!.muscle_group) === part) ?? []
+        if (items.length === 0) return null
+        return (
+          <section key={part} aria-label={part}>
+            <h3 className="group-title">{part}</h3>
+            <ul className="list">
+              {items.map(({ fiche, exercise }) => (
+                <li key={fiche.id}>
+                  <button className="list-item" onClick={() => setOpenId(fiche.id)}>
+                    <span>
+                      <strong>{exercise!.name}</strong><br />
+                      <span className="muted small num">
+                        {fiche.sets} × {fiche.target_reps} · {show(fiche.current_weight)} · +{formatWeight(toDisplay(fiche.increment))}
+                      </span>
+                    </span>
+                    <span className="muted">›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
 
       {open && (
         <ExerciseSheet key={open.fiche.id} exercise={open.exercise!} fiche={open.fiche}
