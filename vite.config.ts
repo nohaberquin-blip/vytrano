@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Muscu',
-        short_name: 'Muscu',
+        name: 'Pumped',
+        short_name: 'Pumped',
         lang: 'fr',
         display: 'standalone',
         start_url: '/',

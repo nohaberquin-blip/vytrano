@@ -34,7 +34,7 @@ export function LoginPage() {
 
   return (
     <div className="auth">
-      <span className="brand">Muscu</span>
+      <span className="brand">Pumped</span>
       <p className="muted">Ton programme, tes charges, tes progrès.</p>
       <div className="segmented" role="group">
         <button type="button" aria-pressed={mode === 'login'} onClick={() => setMode('login')}>Connexion</button>

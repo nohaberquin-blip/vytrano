@@ -1,4 +1,4 @@
-# Mise en place de Supabase
+# Pumped — mise en place de Supabase
 
 1. Dans le projet Supabase, ouvrir **SQL Editor** → **New query**.
 2. Coller et exécuter **en une fois** le contenu de `supabase/setup_all.sql`
