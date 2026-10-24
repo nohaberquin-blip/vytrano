@@ -163,3 +163,11 @@ a { color: inherit; }
 }
 .chip.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .group-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; }
+
+/* Éditeur de méthode */
+.method-editor { margin: 8px 0 16px; }
+.planned-head, .planned-row { display: grid; grid-template-columns: 1.6fr 0.9fr 0.8fr 0.8fr 1.2fr 36px; gap: 6px; align-items: center; }
+.planned-head { margin: 8px 0 4px; }
+.planned-row { margin-bottom: 6px; }
+.planned-row .input { padding: 0 6px; font-size: 14px; min-height: 40px; }
+.planned-row.attached { padding-left: 12px; border-left: 3px solid var(--line); }

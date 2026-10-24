@@ -4,8 +4,8 @@ import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { WeightInput } from './WeightInput'
 import { ExerciseHistory } from './ExerciseHistory'
-
-const toInt = (s: string) => (/^\d+$/.test(s.trim()) ? Number(s) : null)
+import { MethodEditor } from './MethodEditor'
+import { readTemplate, templateError, type SetTemplate } from '../../domain/methods'
 
 export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
   exercise: Exercise
@@ -17,16 +17,20 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
   const { unit, toDisplay, toKg } = useUnit()
   const [weight, setWeight] = useState<number | null>(toDisplay(fiche.current_weight))
   const [increment, setIncrement] = useState<number | null>(toDisplay(fiche.increment))
-  const [sets, setSets] = useState(String(fiche.sets))
-  const [reps, setReps] = useState(String(fiche.target_reps))
+  const [rounding, setRounding] = useState<number | null>(toDisplay(fiche.rounding ?? 2.5))
+  const [auto, setAuto] = useState(fiche.auto_progression !== false)
+  const [template, setTemplate] = useState<SetTemplate>(() => readTemplate(fiche.template, fiche))
 
-  const setsN = toInt(sets)
-  const repsN = toInt(reps)
-  const valid = weight !== null && increment !== null && !!setsN && setsN <= 20 && !!repsN && repsN <= 100
+  const methodError = templateError(template)
+  const valid = weight !== null && increment !== null && rounding !== null && rounding > 0 && !methodError
 
   async function submit() {
     if (!valid) return
-    await save({ ...fiche, current_weight: toKg(weight!), increment: toKg(increment!), sets: setsN!, target_reps: repsN! })
+    await save({
+      ...fiche,
+      current_weight: toKg(weight!), increment: toKg(increment!), rounding: toKg(rounding!),
+      auto_progression: auto, template,
+    })
     onClose()
   }
 
@@ -39,20 +43,24 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
         <label className="field"><span>Palier ({unit})</span>
           <WeightInput label={`Palier (${unit})`} value={increment} onChange={setIncrement} />
         </label>
-        <label className="field"><span>Séries</span>
-          <input aria-label="Séries" className="input" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />
-        </label>
-        <label className="field"><span>Reps visées</span>
-          <input aria-label="Reps visées" className="input" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
+        <label className="field"><span>Arrondi ({unit})</span>
+          <WeightInput label={`Arrondi (${unit})`} value={rounding} onChange={setRounding} />
         </label>
       </div>
       {weight === null && <p className="error">Charge invalide</p>}
       {increment === null && <p className="error">Palier invalide</p>}
-      {(!setsN || setsN > 20) && <p className="error">Séries : entre 1 et 20</p>}
-      {(!repsN || repsN > 100) && <p className="error">Reps : entre 1 et 100</p>}
-      <p className="muted small">
-        Quand toutes les séries atteignent les reps visées, la charge augmente du palier à la séance suivante.
+      {(rounding === null || rounding <= 0) && <p className="error">Arrondi invalide</p>}
+      <label className="switch">
+        <span>Progression automatique</span>
+        <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+      </label>
+      <p className="muted small" style={{ marginTop: 0 }}>
+        {auto
+          ? 'Quand toutes les séries qui comptent atteignent leurs reps, la charge de référence augmente du palier.'
+          : 'Tu choisis tes charges : chaque séance reprend celles réellement soulevées la fois précédente.'}
       </p>
+      <MethodEditor value={template} reference={weight === null ? fiche.current_weight : toKg(weight)}
+        rounding={rounding === null ? undefined : toKg(rounding)} onChange={setTemplate} />
       <button className="btn primary block big" disabled={!valid} onClick={submit}>Enregistrer</button>
       <ExerciseHistory exerciseId={exercise.id} />
       {onRemove && (

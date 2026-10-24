@@ -34,10 +34,21 @@ test('charge invalide → bouton désactivé et message', async () => {
   expect(save).not.toHaveBeenCalled()
 })
 
-test('séries à 0 → bouton désactivé', async () => {
+test('réglages de méthode enregistrés : mode manuel, arrondi, méthode', async () => {
+  const { save } = setup()
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Progression automatique' }))
+  const arrondi = screen.getByLabelText('Arrondi (kg)')
+  await userEvent.clear(arrondi)
+  await userEvent.type(arrondi, '2')
+  await userEvent.selectOptions(screen.getByLabelText('Méthode'), 'top_backoff')
+  await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+  expect(save).toHaveBeenCalledWith(expect.objectContaining({
+    auto_progression: false, rounding: 2, template: expect.objectContaining({ method: 'top_backoff' }),
+  }))
+})
+
+test('méthode invalide → bouton désactivé', async () => {
   setup()
-  const series = screen.getByLabelText('Séries')
-  await userEvent.clear(series)
-  await userEvent.type(series, '0')
+  for (const n of [1, 2, 3, 4]) await userEvent.selectOptions(screen.getByLabelText(`Type série ${n}`), 'warmup')
   expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
 })
