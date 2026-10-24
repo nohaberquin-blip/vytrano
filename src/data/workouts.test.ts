@@ -1,7 +1,8 @@
 import { db } from './db'
 import { addDay, addDayExercise, createProgram } from './programs'
 import { presetTemplate } from '../domain/methods'
-import { abandonWorkout, addSet, finishWorkout, getInProgress, lastSetsFor, startWorkout, updateSet } from './workouts'
+import { abandonWorkout, addSet, finishWorkout, getInProgress, lastSetsFor, previewWorkout, startWorkout, updateSet } from './workouts'
+import { setDayExercisePriority } from './programs'
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()))
@@ -122,4 +123,38 @@ test('mode manuel : chaque jour reprend les charges de sa propre dernière séan
   await finishWith(dayA, 60) // plus récente, mais un autre jour
   const w = await startWorkout('u', dayB)
   expect((await db.workout_sets.where('workout_id').equals(w.id).toArray()).map((s) => s.weight)).toEqual([80, 80])
+})
+
+async function bigDay() {
+  const p = await createProgram('u', 'Gros')
+  const day = await addDay(p.id, 'Jour long')
+  for (const id of ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']) {
+    await addDayExercise('u', day.id, id)
+    const f = (await db.user_exercises.where('exercise_id').equals(id).first())!
+    await db.user_exercises.put({ ...f, sets: 4, target_reps: 8, current_weight: 60 })
+  }
+  return day
+}
+
+test('temps limité : séance réduite et limite enregistrée ; sans limite, séance complète', async () => {
+  const day = await bigDay()
+  const short = await startWorkout('u', day, 20)
+  expect(short.time_limit).toBe(20)
+  const shortSets = await db.workout_sets.where('workout_id').equals(short.id).count()
+  expect(shortSets).toBeLessThan(24)
+  await abandonWorkout(short.id)
+  const full = await startWorkout('u', day)
+  expect(full.time_limit ?? null).toBeNull()
+  expect(await db.workout_sets.where('workout_id').equals(full.id).count()).toBe(24)
+})
+
+test('aperçu : rien n’est écrit ; un exercice prioritaire est gardé', async () => {
+  const day = await bigDay()
+  const last = (await db.program_day_exercises.where('day_id').equals(day.id).sortBy('position')).at(-1)!
+  await setDayExercisePriority(last.id, true)
+  expect((await db.program_day_exercises.get(last.id))!.priority).toBe(true)
+  const preview = await previewWorkout('u', day, 20)
+  expect(preview.changed).toBe(true)
+  expect(preview.exercises.map((e) => e.key)).toContain(last.id)
+  expect(await db.workouts.count()).toBe(0)
 })

@@ -26,6 +26,7 @@ import { readRestSettings, useRestSettings } from './restSettings'
 import { unlockAudio } from './beep'
 import { restSeconds } from '../../domain/rest'
 import { useWakeLock } from './useWakeLock'
+import { TimeLimit } from './TimeLimit'
 
 export function SessionPage() {
   const userId = useUserId()
@@ -38,6 +39,8 @@ function NextWorkout() {
   const userId = useUserId()
   const { show } = useUnit()
   const [justFinished] = useState(() => sessionStorage.getItem('muscu.finished'))
+  // Temps disponible : facultatif, jamais retenu d'une séance à l'autre.
+  const [minutes, setMinutes] = useState<number | null>(null)
   useEffect(() => { sessionStorage.removeItem('muscu.finished') }, [])
 
   const data = useLive(async () => {
@@ -89,18 +92,19 @@ function NextWorkout() {
               </li>
             ))}
           </ul>
-          <button className="btn primary block big" style={{ marginTop: 12 }} onClick={() => startWorkout(userId, day)}>
+          <button className="btn primary block big" style={{ marginTop: 12 }} onClick={() => startWorkout(userId, day, minutes)}>
             Commencer
           </button>
+          <TimeLimit day={day} minutes={minutes} onChange={setMinutes} />
         </>
       )}
-      {tree.days.length > 1 && <OtherDays />}
+      {tree.days.length > 1 && <OtherDays minutes={minutes} />}
     </section>
   )
 }
 
 /** Permet de faire un autre jour que celui proposé. */
-function OtherDays() {
+function OtherDays({ minutes }: { minutes: number | null }) {
   const userId = useUserId()
   const [open, setOpen] = useState(false)
   const tree = useLive(() => getActiveProgram(userId), [userId])
@@ -109,7 +113,7 @@ function OtherDays() {
     <div style={{ marginTop: 20 }}>
       <button className="btn ghost block" onClick={() => setOpen(!open)}>{open ? 'Masquer' : 'Faire un autre jour'}</button>
       {open && tree.days.map((d) => (
-        <button key={d.id} className="list-item" onClick={() => startWorkout(userId, d)}>
+        <button key={d.id} className="list-item" onClick={() => startWorkout(userId, d, minutes)}>
           <span>{d.name}</span><span className="muted">Commencer ›</span>
         </button>
       ))}
@@ -199,6 +203,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     <section className="page">
       <p className="muted small num" style={{ margin: 0 }}>En cours · {minutes} min</p>
       <h1>{workout.name}</h1>
+      {workout.time_limit ? <p className="muted small" style={{ marginTop: -8 }}>Séance adaptée à {workout.time_limit} min</p> : null}
       {meta?.map((m) => (
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}
           methodLabel={methodLabel(m.item, m.fiche)}

@@ -3,7 +3,7 @@ import { Sheet } from '../../app/Sheet'
 import { db } from '../../data/db'
 import {
   addDay, addDayExercise, deleteDay, deleteProgram, getProgramTree, moveDay, moveDayExercise,
-  removeDayExercise, renameDay, renameProgram, setActiveProgram, setDayExerciseTemplate,
+  removeDayExercise, renameDay, renameProgram, setActiveProgram, setDayExercisePriority, setDayExerciseTemplate,
 } from '../../data/programs'
 import { METHOD_LABELS, readTemplate, templateError, type SetTemplate } from '../../domain/methods'
 import type { ProgramDayExercise, UserExercise } from '../../domain/types'
@@ -59,6 +59,9 @@ export function ProgramEditor({ programId, onBack }: { programId: string; onBack
           <ul className="list" style={{ marginTop: 8 }}>
             {(exercisesByDay.get(day.id) ?? []).map((item, j, arr) => (
               <li key={item.id} className="row" style={{ minHeight: 44 }}>
+                <button className={item.priority ? 'btn ghost icon star on' : 'btn ghost icon star'} aria-label="Prioritaire"
+                  aria-pressed={!!item.priority} title="Gardé en priorité si la séance est raccourcie"
+                  onClick={() => setDayExercisePriority(item.id, !item.priority)}>{item.priority ? '★' : '☆'}</button>
                 <span style={{ flex: 1 }}>
                   {names.get(item.exercise_id) ?? '…'}<br />
                   <button className="link-btn small" onClick={() => setMethodFor(item)}>

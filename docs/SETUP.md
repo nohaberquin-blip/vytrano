@@ -2,7 +2,7 @@
 
 1. Dans le projet Supabase, ouvrir **SQL Editor** → **New query**.
 2. Coller et exécuter **en une fois** le contenu de `supabase/setup_all.sql`
-   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `008`).
+   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `008` et `010`).
    Sur un projet déjà installé, coller seulement les nouveaux fichiers de `supabase/migrations/`.
 3. Exécuter `supabase/tests/rls_check.sql` : le résultat doit afficher **RLS OK**.
 4. **Authentication → Providers → Email** : pour tester vite, désactiver « Confirm email »
@@ -31,6 +31,10 @@
 # Mise en ligne (Vercel)
 
 Adresse actuelle : **https://vytrano.vercel.app** (projet Vercel `xoly/vytrano`).
+
+**Avant de publier**, exécuter dans Supabase toute nouvelle migration (par exemple `010_temps_disponible.sql`)
+puis `tests/rls_check.sql` (« RLS OK »). Sinon, l'app envoie des colonnes que la base ne connaît pas encore
+et la synchronisation reste bloquée jusqu'à ce que la migration soit faite.
 
 Pour publier une nouvelle version, depuis le dossier du projet :
 ```

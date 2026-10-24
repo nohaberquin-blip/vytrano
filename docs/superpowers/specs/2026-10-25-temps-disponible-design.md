@@ -58,7 +58,7 @@ Le résultat donne :
 | Colonne | Définition |
 |---|---|
 | `program_day_exercises.priority` | `boolean not null default false` |
-| `workouts.time_limit` | `smallint null check (time_limit in (20, 30, 45, 60, 90))` |
+| `workouts.time_limit` | `smallint null check (time_limit between 10 and 180)` |
 
 `import_program` copie aussi `priority`. Côté client, les deux champs sont optionnels (`false` et
 `null` si absents).
@@ -69,8 +69,8 @@ Le résultat donne :
   « Prioritaire » et `aria-pressed`.
 - **Séance (avant de commencer)** :
   - sous « Commencer », le lien « ⏱ Temps limité ? » ;
-  - il ouvre les choix 90 · 60 · 45 · 30 · 20 min, un aperçu et « Annuler » (retour à la séance
-    complète, lien de nouveau affiché).
+  - il ouvre les choix 90 · 60 · 45 · 30 · 20 min, un champ « Ou ton temps » (10 à 180 min, rempli
+    par les propositions), un aperçu et « Annuler » (retour à la séance complète, lien de nouveau affiché).
 - **Aperçu** :
   - « Ta séance tient en ~52 min » si rien ne change ;
   - sinon « Séance adaptée : ~44 min au lieu de ~62 » et, par exercice : « inchangé »,
