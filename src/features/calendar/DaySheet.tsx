@@ -3,19 +3,23 @@ import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { addSession, cancelMove, moveSession, setRest } from '../../data/calendar'
+import { removePeriod, setPeriodDays, startPeriod } from '../../data/cycle'
 import { db } from '../../data/db'
 import { useLive } from '../../data/useLive'
 import { setsOf, startWorkout } from '../../data/workouts'
 import { addDays, buildCalendar, type CalendarDay, type CalendarInput } from '../../domain/calendar'
-import type { Workout } from '../../domain/types'
+import { PERIOD_DAYS, PERIOD_MAX, PERIOD_MIN, periodOn } from '../../domain/cycle'
+import type { Period, Workout } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
 import { longDate, shortDay } from './format'
 
 /** Détail d'un jour : contenu et actions selon son état. */
-export function DaySheet({ day, input, exercises, onClose }: {
+export function DaySheet({ day, input, exercises, periods, onClose }: {
   day: CalendarDay
   input: CalendarInput
   exercises: Map<string, string[]>
+  /** Règles notées ; null = mode absent (profil non « Femme »). */
+  periods: Period[] | null
   onClose(): void
 }) {
   const userId = useUserId()
@@ -78,7 +82,42 @@ export function DaySheet({ day, input, exercises, onClose }: {
         </>
       )}
       {day.state === 'done' && day.workouts.map((w) => <DoneWorkout key={w.id} workout={w} />)}
+      {periods && <PeriodSection date={day.date} today={today} periods={periods} busy={busy} run={run} />}
     </Sheet>
+  )
+}
+
+/** Règles : noter un début (jusqu'à aujourd'hui), ou modifier / supprimer la période qui couvre ce jour. */
+function PeriodSection({ date, today, periods, busy, run }: {
+  date: string
+  today: string
+  periods: Period[]
+  busy: boolean
+  run(action: () => Promise<void>): void
+}) {
+  const userId = useUserId()
+  const current = periodOn(date, periods)
+  const [text, setText] = useState(String(current?.days ?? PERIOD_DAYS))
+  if (!current && date > today) return null
+  const days = /^\d{1,2}$/.test(text.trim()) ? Number(text.trim()) : NaN
+  const invalid = !(days >= PERIOD_MIN && days <= PERIOD_MAX)
+  return (
+    <div className="card period-card">
+      {current && <p className="card-title">Règles</p>}
+      <label className="field"><span>Durée (jours)</span>
+        <input className="input num" type="number" inputMode="numeric" min={PERIOD_MIN} max={PERIOD_MAX}
+          value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      {invalid && <p className="error">Entre {PERIOD_MIN} et {PERIOD_MAX} jours</p>}
+      {current
+        ? (
+          <div className="row">
+            <button className="btn" style={{ flex: 1 }} disabled={busy || invalid} onClick={() => run(() => setPeriodDays(current.id, days))}>Modifier la durée</button>
+            <button className="btn danger" style={{ flex: 1 }} disabled={busy} onClick={() => run(() => removePeriod(current.id))}>Supprimer ces règles</button>
+          </div>
+        )
+        : <button className="btn block" disabled={busy || invalid} onClick={() => run(() => startPeriod(userId, date, days))}>Début des règles</button>}
+    </div>
   )
 }
 

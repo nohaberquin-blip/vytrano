@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { db } from '../../data/db'
 import { saveWeekdays } from '../../data/calendar'
+import { saveBodyProfile } from '../../data/body'
+import { startPeriod } from '../../data/cycle'
 import { addDay, createProgram } from '../../data/programs'
 import { WithUser } from '../../test/auth'
 import { CalendarPage } from './CalendarPage'
@@ -145,4 +147,66 @@ test('⚙︎ rouvre le réglage des jours, déjà cochés', async () => {
   expect(screen.getByRole('button', { name: 'Mardi' })).toHaveAttribute('aria-pressed', 'false')
   await userEvent.click(screen.getByRole('button', { name: 'Annuler' }))
   expect(await screen.findByText('Octobre 2026')).toBeInTheDocument()
+})
+
+test('profil « Femme » : noter ses règles, prévision, modifier la durée, supprimer', async () => {
+  await seed()
+  await saveBodyProfile('u', { sex: 'female' })
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '20 octobre, repos' }))
+  const sheet = await screen.findByRole('dialog')
+  expect(within(sheet).getByRole('spinbutton', { name: 'Durée (jours)' })).toHaveValue(5)
+  await userEvent.click(within(sheet).getByRole('button', { name: 'Début des règles' }))
+  expect(await screen.findByRole('button', { name: '24 octobre, repos, Règles' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '20 octobre, repos, Règles' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '25 octobre, repos' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Suivant' }))
+  expect(await screen.findByRole('button', { name: '17 novembre, repos, Règles prévues' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Précédent' }))
+
+  await userEvent.click(await screen.findByRole('button', { name: '22 octobre, repos, Règles' }))
+  const edit = await screen.findByRole('dialog')
+  const field = within(edit).getByRole('spinbutton', { name: 'Durée (jours)' })
+  await userEvent.clear(field)
+  await userEvent.type(field, '3')
+  await userEvent.click(within(edit).getByRole('button', { name: 'Modifier la durée' }))
+  expect(await screen.findByRole('button', { name: '23 octobre, prévu' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '22 octobre, repos, Règles' })).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: '21 octobre, prévu, Règles' }))
+  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Supprimer ces règles' }))
+  expect(await screen.findByRole('button', { name: '20 octobre, repos' })).toBeInTheDocument()
+  expect(await db.periods.count()).toBe(0)
+})
+
+test('durée hors bornes refusée', async () => {
+  await seed()
+  await saveBodyProfile('u', { sex: 'female' })
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '20 octobre, repos' }))
+  const sheet = await screen.findByRole('dialog')
+  const field = within(sheet).getByRole('spinbutton', { name: 'Durée (jours)' })
+  await userEvent.clear(field)
+  await userEvent.type(field, '12')
+  expect(within(sheet).getByText('Entre 2 et 10 jours')).toBeInTheDocument()
+  expect(within(sheet).getByRole('button', { name: 'Début des règles' })).toBeDisabled()
+})
+
+test('profil non « Femme » : ni bouton ni marque, même avec des règles en base', async () => {
+  await seed()
+  await saveBodyProfile('u', { sex: 'male' })
+  await startPeriod('u', '2026-10-19')
+  renderPage()
+  expect(await screen.findByRole('button', { name: '20 octobre, repos' })).toBeInTheDocument()
+  expect(screen.queryByText('Règles')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: '20 octobre, repos' }))
+  expect(within(await screen.findByRole('dialog')).queryByRole('button', { name: 'Début des règles' })).not.toBeInTheDocument()
+})
+
+test('jour futur : pas de « Début des règles »', async () => {
+  await seed()
+  await saveBodyProfile('u', { sex: 'female' })
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '24 octobre, repos' }))
+  expect(within(await screen.findByRole('dialog')).queryByRole('button', { name: 'Début des règles' })).not.toBeInTheDocument()
 })

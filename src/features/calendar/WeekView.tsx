@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { setWeeklyGoal } from '../../data/calendar'
 import { weekProgress, type CalendarDay, type CalendarInput } from '../../domain/calendar'
+import { periodState } from '../../domain/cycle'
+import type { Period } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
-import { STATE_LABELS, longDate, shortDay } from './format'
+import { STATE_LABELS, periodLabel, longDate, shortDay } from './format'
 
 /** Texte principal d'un jour dans la liste de la semaine. */
 export function dayText(d: CalendarDay): string {
@@ -15,10 +17,12 @@ export function dayText(d: CalendarDay): string {
   }
 }
 
-export function WeekView({ monday, cal, input, exercises, onPick }: {
+export function WeekView({ monday, cal, input, exercises, periods, onPick }: {
   monday: string
   cal: CalendarDay[]
   input: CalendarInput
+  /** Règles notées ; null = mode absent (profil non « Femme »). */
+  periods: Period[] | null
   /** Noms des exercices par jour de programme. */
   exercises: Map<string, string[]>
   onPick(day: CalendarDay): void
@@ -54,9 +58,11 @@ export function WeekView({ monday, cal, input, exercises, onPick }: {
         </div>
       )}
       <div className="cal-week">
-        {cal.map((d) => (
-          <button key={d.date} aria-label={`${longDate(d.date)}, ${STATE_LABELS[d.state]}`}
-            className={['cal-row', `cal-${d.state}`, d.date === input.today && 'today'].filter(Boolean).join(' ')}
+        {cal.map((d) => {
+          const ps = periods && periodState(d.date, periods, input.today)
+          return (
+          <button key={d.date} aria-label={`${longDate(d.date)}, ${STATE_LABELS[d.state]}${periodLabel(ps)}`}
+            className={['cal-row', `cal-${d.state}`, ps && `period-${ps}`, d.date === input.today && 'today'].filter(Boolean).join(' ')}
             onClick={() => onPick(d)}>
             <span className="cal-row-date muted small">{shortDay(d.date)}</span>
             <span className="cal-dot" aria-hidden />
@@ -66,8 +72,10 @@ export function WeekView({ monday, cal, input, exercises, onPick }: {
                 <span className="muted small">{(exercises.get(d.day.id) ?? []).join(' · ')}</span>
               )}
             </span>
+            {ps && <span className="period-mark" aria-hidden />}
           </button>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
