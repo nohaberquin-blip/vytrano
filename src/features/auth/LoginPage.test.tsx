@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { LoginPage } from './LoginPage'
 import { supabase } from '../../data/supabase'
@@ -53,10 +54,22 @@ describe('mot de passe oublié et rester connecté', () => {
     expect(await screen.findByText(/Si un compte existe pour cet email/)).toBeInTheDocument()
   })
 
-  test('lien expiré dans l’adresse → message et formulaire de nouveau lien', () => {
-    window.location.hash = '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired'
-    render(<LoginPage />)
+  test('lien expiré lu au démarrage, même si Supabase a déjà effacé l’adresse → message et formulaire de nouveau lien', () => {
+    window.location.hash = ''
+    render(<LoginPage startupHash="#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired" />)
     expect(screen.getByText(/Ce lien a expiré ou a déjà servi/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Recevoir le lien' })).toBeInTheDocument()
   })
+})
+
+test('l’adresse du démarrage : lue autant de fois qu’on veut, vide une fois marquée comme utilisée', async () => {
+  const { peekStartupHash, consumeStartupHash } = await import('../../data/supabase')
+  expect(peekStartupHash()).toBe(peekStartupHash())
+  consumeStartupHash()
+  expect(peekStartupHash()).toBe('')
+})
+
+test('en mode strict (double initialisation), le message « lien expiré » reste affiché', () => {
+  render(<StrictMode><LoginPage startupHash="#error_code=otp_expired" /></StrictMode>)
+  expect(screen.getByText(/Ce lien a expiré ou a déjà servi/)).toBeInTheDocument()
 })

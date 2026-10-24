@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { NewPasswordForm, isRecoveryUrl } from './NewPasswordPage'
+import { NewPasswordForm } from './NewPasswordPage'
+import { isRecoveryUrl, linkError } from './recovery'
 
 function setup(update = vi.fn().mockResolvedValue({ error: null })) {
   const onDone = vi.fn()
@@ -46,4 +47,10 @@ test('détection d’un lien de réinitialisation dans l’adresse', () => {
   expect(isRecoveryUrl('#access_token=x&type=recovery')).toBe(true)
   expect(isRecoveryUrl('#access_token=x&type=signup')).toBe(false)
   expect(isRecoveryUrl('')).toBe(false)
+})
+
+test('erreur de lien dans l’adresse', () => {
+  expect(linkError('#error=access_denied&error_code=otp_expired')).toBe(true)
+  expect(linkError('#access_token=x&type=recovery')).toBe(false)
+  expect(linkError('')).toBe(false)
 })

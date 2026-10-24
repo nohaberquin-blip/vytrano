@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { supabase } from '../../data/supabase'
+import { useEffect, useState, type FormEvent } from 'react'
+import { consumeStartupHash, peekStartupHash, supabase } from '../../data/supabase'
+import { linkError } from './recovery'
 import { getRemember, setRemember } from '../../data/authStorage'
 
 function authErrorMessage(message: string): string {
@@ -12,18 +13,11 @@ function authErrorMessage(message: string): string {
   return message
 }
 
-/** Lien reçu par email expiré ou déjà utilisé : Supabase renvoie vers l'app avec l'erreur dans l'adresse. */
-function expiredLinkInUrl(): boolean {
-  const params = new URLSearchParams(window.location.hash.slice(1))
-  if (!params.get('error_code') && !params.get('error')) return false
-  history.replaceState(null, '', window.location.pathname + window.location.search)
-  return true
-}
-
 const RESET_SENT = 'Si un compte existe pour cet email, tu vas recevoir un lien pour choisir un nouveau mot de passe. Pense à regarder les spams.'
 
-export function LoginPage() {
-  const [expired] = useState(expiredLinkInUrl)
+export function LoginPage({ startupHash }: { startupHash?: string }) {
+  const [expired] = useState(() => linkError(startupHash ?? peekStartupHash()))
+  useEffect(() => { if (startupHash === undefined) consumeStartupHash() }, [startupHash])
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(expired ? 'forgot' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -3,7 +3,7 @@ import type { Profile } from '../../domain/types'
 import { db } from '../../data/db'
 import { cachedProfile, clearProfileCache, fetchProfile } from '../../data/profile'
 import { pull, setCurrentUser } from '../../data/repo'
-import { supabase } from '../../data/supabase'
+import { supabase, urlHashAtStartup } from '../../data/supabase'
 import { createSync, supabaseSyncClient } from '../../data/sync'
 import { isRecoveryUrl } from './recovery'
 
@@ -26,8 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<AuthState['user']>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  // Lu dès le départ : l'événement PASSWORD_RECOVERY peut arriver avant l'abonnement.
-  const [recovering, setRecovering] = useState(() => isRecoveryUrl(window.location.hash))
+  // Lu au démarrage : l'événement PASSWORD_RECOVERY peut arriver avant l'abonnement, et Supabase efface l'adresse.
+  const [recovering, setRecovering] = useState(() => isRecoveryUrl(urlHashAtStartup))
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
