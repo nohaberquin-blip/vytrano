@@ -12,6 +12,9 @@ import { loadCalendarInput } from '../../data/calendar'
 import { buildCalendar, toISODate } from '../../domain/calendar'
 import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
 import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
+import { loadProgress, publishCard } from '../../data/progress'
+import { progressGain } from '../../domain/streak'
+import { useAuth } from '../auth/AuthProvider'
 import { periodState } from '../../domain/cycle'
 import { useUserId } from '../auth/AuthProvider'
 import { METHOD_LABELS, readTemplate, templateSummary } from '../../domain/methods'
@@ -42,11 +45,12 @@ function NextWorkout() {
   const userId = useUserId()
   const { show } = useUnit()
   const [justFinished] = useState(() => sessionStorage.getItem('muscu.finished'))
+  const [gain] = useState(() => readGain())
   // Temps disponible : facultatif, jamais retenu d'une séance à l'autre.
   const [minutes, setMinutes] = useState<number | null>(null)
   // Séance allégée : seulement un jour de règles (notées ou prévues), jamais retenue non plus.
   const [lightened, setLightened] = useState<Lightening | null>(null)
-  useEffect(() => { sessionStorage.removeItem('muscu.finished') }, [])
+  useEffect(() => { sessionStorage.removeItem('muscu.finished'); sessionStorage.removeItem(GAIN_KEY) }, [])
 
   const data = useLive(async () => {
     const tree = await getActiveProgram(userId)
@@ -62,7 +66,8 @@ function NextWorkout() {
     const calendar = await loadCalendarInput(userId, today)
     const restDay = !!calendar && buildCalendar(calendar, today, today)[0].state === 'rest'
     const periodDay = (await isFemale(userId)) && periodState(today, await listPeriods(userId), today) !== null
-    return { tree, day, rows, restDay, periodDay }
+    const { streak } = await loadProgress(userId, today)
+    return { tree, day, rows, restDay, periodDay, streak }
   }, [userId])
 
   if (!data) return null
@@ -77,7 +82,7 @@ function NextWorkout() {
       </section>
     )
   }
-  const { tree, day, rows, restDay, periodDay } = data
+  const { tree, day, rows, restDay, periodDay, streak } = data
   return (
     <section className="page">
       {justFinished && (
@@ -85,9 +90,13 @@ function NextWorkout() {
           {justFinished === 'light'
             ? 'Séance allégée enregistrée 🌸 Tes charges habituelles ne changent pas.'
             : 'Séance enregistrée 💪 Les charges ont été mises à jour.'}
+          {gain && <GainLines gain={gain} />}
         </div>
       )}
-      <p className="muted small" style={{ margin: 0 }}>{tree.program.name}</p>
+      <p className="muted small" style={{ margin: 0 }}>
+        {tree.program.name}
+        {streak > 0 && <span className="session-streak">🔥 {streak} semaine{streak > 1 ? 's' : ''}</span>}
+      </p>
       <h1>{day ? day.name : 'Séance'}</h1>
       {restDay && <p className="muted">Jour de repos aujourd'hui</p>}
       {!day && <p className="empty">Ce programme n’a pas encore de jour. <Link to="/programmes">Le compléter</Link></p>}
@@ -113,6 +122,27 @@ function NextWorkout() {
       )}
       {tree.days.length > 1 && <OtherDays minutes={minutes} lightened={periodDay ? lightened : null} />}
     </section>
+  )
+}
+
+const GAIN_KEY = 'muscu.gain'
+type Gain = ReturnType<typeof progressGain>
+
+/** Gain de la séance qui vient d'être terminée, pour le bandeau de l'écran suivant. */
+function storeGain(gain: Gain) {
+  try { sessionStorage.setItem(GAIN_KEY, JSON.stringify(gain)) } catch { /* bandeau sans le détail de l'XP */ }
+}
+function readGain(): Gain | null {
+  try { const raw = sessionStorage.getItem(GAIN_KEY); return raw ? JSON.parse(raw) as Gain : null } catch { return null }
+}
+
+function GainLines({ gain }: { gain: Gain }) {
+  return (
+    <span className="gain">
+      {gain.xp > 0 && <strong>+{gain.xp} XP</strong>}
+      {gain.level && <strong>Niveau {gain.level} atteint !</strong>}
+      {gain.badges.map((b) => <span key={b.id}>Nouveau badge : {b.label}</span>)}
+    </span>
   )
 }
 
@@ -145,6 +175,7 @@ function useElapsed(since: string) {
 
 function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[] }) {
   const userId = useUserId()
+  const { profile } = useAuth()
   const minutes = useElapsed(workout.started_at)
   const lightened = useLive(() => showsLightened(userId, workout.id), [userId, workout.id])
   const exerciseIds = [...new Set(sets.map((s) => s.exercise_id))]
@@ -201,10 +232,16 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
 
   async function finish() {
     if (remaining > 0 && !confirm(`${remaining} série${remaining > 1 ? 's' : ''} non validée${remaining > 1 ? 's' : ''}. Terminer quand même ?`)) return
-    // Posé avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
+    const today = toISODate(new Date())
+    const before = await loadProgress(userId, today)
+    const after = await loadProgress(userId, today, workout)
+    // Posés avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
+    storeGain(progressGain(before, after))
     sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)
+    // Carte des amis : seulement si le partage est activé ; un échec sera rattrapé à la séance suivante.
+    if (profile?.share_progress) void publishCard(userId, after).catch(() => {})
   }
 
   async function abandon() {

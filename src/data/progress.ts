@@ -1,19 +1,28 @@
 import { progress, type Progress } from '../domain/streak'
+import type { Workout } from '../domain/types'
 import { loadCalendarInput } from './calendar'
 import { db } from './db'
 import { updateProfile } from './profile'
 import { supabase } from './supabase'
 
-/** Série, niveau et badges de l'utilisateur, recalculés depuis la base locale. */
-export async function loadProgress(userId: string, today: string): Promise<Progress> {
-  const workouts = await db.workouts.where('user_id').equals(userId).filter((w) => w.status === 'done').toArray()
-  return progress(workouts, await loadCalendarInput(userId, today), today)
+/**
+ * Série, niveau et badges de l'utilisateur, recalculés depuis la base locale.
+ * `finishing` : séance comptée comme terminée (pour connaître le gain avant de l'enregistrer).
+ */
+export async function loadProgress(userId: string, today: string, finishing?: Workout): Promise<Progress> {
+  const done = await db.workouts.where('user_id').equals(userId).filter((w) => w.status === 'done' && w.id !== finishing?.id).toArray()
+  const workouts = finishing ? [...done, { ...finishing, status: 'done' as const }] : done
+  const input = await loadCalendarInput(userId, today)
+  return progress(workouts, input && { ...input, workouts }, today)
 }
 
 export interface ProgressCard { level: number; title: string; streak: number; badges: string[] }
 
-/** Résumé partagé avec les amis : jamais l'historique, seulement niveau, titre, série et badges. */
-export const cardOf = (p: Progress): ProgressCard => ({ level: p.level, title: p.title, streak: p.streak, badges: p.badges.map((b) => b.id) })
+/** Résumé partagé avec les amis : jamais l'historique, seulement niveau, titre, série et badges (du plus ancien au plus récent). */
+export const cardOf = (p: Progress): ProgressCard => ({
+  level: p.level, title: p.title, streak: p.streak,
+  badges: [...p.badges].sort((a, b) => a.date.localeCompare(b.date)).map((b) => b.id),
+})
 
 /** Écrit la carte sur le serveur (partage activé seulement). */
 export async function publishCard(userId: string, p: Progress) {
