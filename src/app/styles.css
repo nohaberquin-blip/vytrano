@@ -309,11 +309,28 @@ a { color: inherit; }
 .progress-streak { gap: 14px; margin: 8px 0 4px; font-weight: 650; }
 .badges { list-style: none; padding: 0; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
 .badge {
-  display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 48px; padding: 6px 8px; border-radius: 12px;
-  border: 1px dashed var(--line); color: var(--muted); font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 8px 4px; border-radius: 12px;
+  border: 1px solid transparent; color: var(--muted); font-size: 12px; line-height: 1.25;
 }
-.badge.on { border: 1px solid transparent; background: var(--accent); color: var(--accent-ink); }
+.badge.on { border-color: var(--line); background: var(--surface); color: var(--text); }
 .badge-label { font-weight: 650; }
-.badge-sub { opacity: 0.8; }
+.badge-sub { color: var(--muted); }
+
+/* Badges en disques de compétition : couleur officielle selon le poids, poids gravé. */
+.badge-icon { flex: none; --plate: #f4f4f2; --ink: #2c2c2a; --lip: rgba(0, 0, 0, 0.18); }
+.badge-icon.kg-5 { --plate: #f4f4f2; --ink: #2c2c2a; }
+.badge-icon.kg-10 { --plate: #2e9e4f; --ink: #ffffff; }
+.badge-icon.kg-15 { --plate: #f2c230; --ink: #3d2e05; }
+.badge-icon.kg-20 { --plate: #1f5fbf; --ink: #ffffff; }
+.badge-icon.kg-25 { --plate: #d62f2f; --ink: #ffffff; }
+.badge-plate { fill: var(--plate); stroke: rgba(0, 0, 0, 0.25); stroke-width: 1; }
+.badge-lip { stroke: var(--lip); }
+.badge-hub { fill: #c9c7c0; stroke: #888780; stroke-width: 1; }
+.badge-hole { fill: #2c2c2a; }
+.badge-glyph { fill: var(--ink); stroke: var(--ink); stroke-width: 0; }
+.badge-glyph-fill { fill: var(--ink); }
+.badge-kg { fill: var(--ink); font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em; }
+.badge-icon.locked { filter: grayscale(1); opacity: 0.35; }
 .session-streak { margin-left: 8px; font-weight: 650; color: var(--text); }
+.gain-badge { display: inline-flex; align-items: center; gap: 6px; }
 .gain { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }

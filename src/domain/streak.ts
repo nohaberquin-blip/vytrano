@@ -1,20 +1,28 @@
 import { addDays, weekGoal, weekStart, workoutDate, type CalendarInput } from './calendar'
 import type { Workout } from './types'
 
-export interface Badge { id: string; label: string; hint: string }
+/** Poids du disque (couleurs des disques de compétition) : plus le badge est rare, plus il est lourd. */
+export type BadgeKg = 5 | 10 | 15 | 20 | 25
+export type BadgeIcon = 'dumbbell' | 'flame' | 'chevrons' | 'target' | 'comeback'
+export interface Badge { id: string; label: string; hint: string; kg: BadgeKg; icon: BadgeIcon }
 
 const count = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
 /** Catalogue, dans l'ordre d'affichage. */
 export const BADGES: Badge[] = [
-  ...[1, 10, 50, 100, 250, 500].map((n) => ({
+  ...([[1, 5], [10, 10], [50, 15], [100, 20], [250, 20], [500, 25]] as const).map(([n, kg]) => ({
     id: `sessions-${n}`, label: n === 1 ? '1re séance' : `${n} séances`, hint: count(n, 'Terminer une séance', `Terminer ${n} séances`),
+    kg, icon: 'dumbbell' as const,
   })),
-  ...[4, 12, 26, 52].map((n) => ({ id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite` })),
-  ...[5, 10, 20, 30].map((n) => ({ id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}` })),
-  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine' },
-  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine' },
-  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt' },
+  ...([[4, 10], [12, 15], [26, 20], [52, 25]] as const).map(([n, kg]) => ({
+    id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite`, kg, icon: 'flame' as const,
+  })),
+  ...([[5, 10], [10, 15], [20, 20], [30, 25]] as const).map(([n, kg]) => ({
+    id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}`, kg, icon: 'chevrons' as const,
+  })),
+  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine', kg: 5, icon: 'target' },
+  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine', kg: 15, icon: 'target' },
+  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt', kg: 10, icon: 'comeback' },
 ]
 
 const TITLES: [number, string][] = [[30, 'Légende'], [25, 'Élite'], [20, 'Expert'], [15, 'Assidu'], [10, 'Confirmé'], [5, 'Régulier'], [1, 'Débutant']]

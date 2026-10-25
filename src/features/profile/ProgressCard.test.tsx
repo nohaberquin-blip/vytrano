@@ -70,3 +70,18 @@ test('partage désactivé : rien n’est publié à l’ouverture', async () => 
   await new Promise((r) => setTimeout(r, 50))
   expect(publishCard).not.toHaveBeenCalled()
 })
+
+test('disques colorés : le poids monte avec la rareté ; grisés tant qu’ils ne sont pas obtenus', async () => {
+  await done('a', '2026-09-01')
+  render(<WithUser><ProgressCard /></WithUser>)
+  const card = await screen.findByRole('region', { name: 'Régularité' })
+  const first = await within(card).findByRole('listitem', { name: /1re séance, obtenu le/ })
+  const icon = first.querySelector('svg.badge-icon')!
+  expect(icon).toHaveClass('kg-5')
+  expect(icon).not.toHaveClass('locked')
+  expect(icon).toHaveTextContent('5 kg')
+  const rare = within(card).getByRole('listitem', { name: /^500 séances, à débloquer/ }).querySelector('svg.badge-icon')!
+  expect(rare).toHaveClass('kg-25', 'locked')
+  expect(rare).toHaveTextContent('25 kg')
+  expect(card.querySelectorAll('svg.badge-icon')).toHaveLength(17)
+})

@@ -121,3 +121,12 @@ test('rapide sur 3 ans d’historique (moins de 15 ms)', () => {
   const times = [0, 1, 2].map(() => { const t = performance.now(); progress(ws, big, '2026-10-25'); return performance.now() - t }).sort((a, b) => a - b)
   expect(times[1]).toBeLessThan(15)
 })
+
+test('poids des disques selon la rareté : 5, 10, 15, 20, 25 kg', () => {
+  const kg = (id: string) => BADGES.find((b) => b.id === id)!.kg
+  expect(['sessions-1', 'sessions-10', 'sessions-50', 'sessions-100', 'sessions-250', 'sessions-500'].map(kg)).toEqual([5, 10, 15, 20, 20, 25])
+  expect(['streak-4', 'streak-12', 'streak-26', 'streak-52'].map(kg)).toEqual([10, 15, 20, 25])
+  expect(['level-5', 'level-10', 'level-20', 'level-30'].map(kg)).toEqual([10, 15, 20, 25])
+  expect(['goal-1', 'goal-10', 'comeback'].map(kg)).toEqual([5, 15, 10])
+  expect(new Set(BADGES.map((b) => b.icon))).toEqual(new Set(['dumbbell', 'flame', 'chevrons', 'target', 'comeback']))
+})
