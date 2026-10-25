@@ -179,3 +179,17 @@ export interface WorkoutLightening {
 
 /** Allègement d'une séance : charges −10 % / −20 %, ou 2 séries de travail par exercice. */
 export type Lightening = 'minus10' | 'minus20' | 'fewer'
+
+/** Défi personnel ou objectif de séances d'un mois (`month`, une ligne par mois modifié). */
+export interface Challenge {
+  id: string
+  user_id: string
+  kind: 'month' | 'sessions' | 'lift'
+  exercise_id: string | null
+  metric: 'weight' | 'e1rm' | null
+  /** Séances, ou kg pour un défi de charge. */
+  target: number
+  start: string
+  end_date: string
+  updated_at?: string
+}
