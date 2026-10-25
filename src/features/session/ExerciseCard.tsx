@@ -1,6 +1,8 @@
+import { Fragment } from 'react'
 import { useUnit } from '../../app/units'
 import { ATTACHED_KINDS, COUNTING_KINDS, KIND_LABELS, setKind } from '../../domain/methods'
 import type { WorkoutSet } from '../../domain/types'
+import { oneRepMax, type RecordKind } from '../../domain/records'
 import { WeightInput } from '../exercises/WeightInput'
 
 const repsText = (s: WorkoutSet) =>
@@ -19,7 +21,7 @@ function summary(sets: WorkoutSet[], show: (kg: number) => string): string {
   return groups.map((g) => `${g.n} × ${g.reps} à ${show(g.weight)}`).join(' + ')
 }
 
-export function ExerciseCard({ name, methodLabel, sets, last, targetWeight, onUpdate, onAddSet }: {
+export function ExerciseCard({ name, methodLabel, sets, last, targetWeight, records, onUpdate, onAddSet }: {
   name: string
   /** Nom de la méthode, affiché au-dessus du résumé (absent pour une fiche classique). */
   methodLabel?: string
@@ -28,6 +30,8 @@ export function ExerciseCard({ name, methodLabel, sets, last, targetWeight, onUp
   last: WorkoutSet[]
   /** Charge de référence de la fiche. */
   targetWeight?: number
+  /** Records battus par les séries validées de cette séance. */
+  records?: Map<string, RecordKind[]>
   onUpdate(s: WorkoutSet): void
   onAddSet(): void
 }) {
@@ -62,8 +66,10 @@ export function ExerciseCard({ name, methodLabel, sets, last, targetWeight, onUp
         const kind = setKind(s)
         const classes = ['set-row', labelled && 'labelled', s.done && 'done', ATTACHED_KINDS.includes(kind) && i > 0 && setKind(sets[i - 1]) !== 'warmup' && 'attached']
         const noTarget = kind === 'amrap' || s.target_reps === null
+        const record = s.done ? records?.get(s.id) : undefined
         return (
-          <div key={s.id} className={classes.filter(Boolean).join(' ')}>
+          <Fragment key={s.id}>
+          <div className={classes.filter(Boolean).join(' ')}>
             <span className="set-label">
               <span className="muted num">{i + 1}</span>
               {labelled && <span className={`tag tag-${kind}`}>{KIND_LABELS[kind]}</span>}
@@ -80,6 +86,15 @@ export function ExerciseCard({ name, methodLabel, sets, last, targetWeight, onUp
               aria-label={`${s.done ? 'Annuler' : 'Valider'} la série ${i + 1}`}
               onClick={() => onUpdate({ ...s, done: !s.done })}>✓</button>
           </div>
+          {record && (
+            <p className="record-note small">
+              🏆 Record ! {[
+                record.includes('weight') && `Charge max ${show(s.weight)}`,
+                record.includes('e1rm') && `1RM estimé ${show(oneRepMax(s))}`,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          </Fragment>
         )
       })}
       <button className="btn ghost small" style={{ marginTop: 6 }} onClick={onAddSet}>＋ Série</button>
