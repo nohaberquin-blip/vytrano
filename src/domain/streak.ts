@@ -1,20 +1,27 @@
 import { addDays, weekGoal, weekStart, workoutDate, type CalendarInput } from './calendar'
 import type { Workout } from './types'
 
-export interface Badge { id: string; label: string; hint: string }
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum'
+export type BadgeIcon = 'dumbbell' | 'flame' | 'chevrons' | 'target' | 'comeback'
+export interface Badge { id: string; label: string; hint: string; tier: BadgeTier; icon: BadgeIcon }
 
 const count = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
-/** Catalogue, dans l'ordre d'affichage. */
+/** Catalogue, dans l'ordre d'affichage ; le palier donne la couleur du disque. */
 export const BADGES: Badge[] = [
-  ...[1, 10, 50, 100, 250, 500].map((n) => ({
+  ...([[1, 'bronze'], [10, 'bronze'], [50, 'silver'], [100, 'gold'], [250, 'gold'], [500, 'platinum']] as const).map(([n, tier]) => ({
     id: `sessions-${n}`, label: n === 1 ? '1re séance' : `${n} séances`, hint: count(n, 'Terminer une séance', `Terminer ${n} séances`),
+    tier, icon: 'dumbbell' as const,
   })),
-  ...[4, 12, 26, 52].map((n) => ({ id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite` })),
-  ...[5, 10, 20, 30].map((n) => ({ id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}` })),
-  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine' },
-  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine' },
-  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt' },
+  ...([[4, 'bronze'], [12, 'silver'], [26, 'gold'], [52, 'platinum']] as const).map(([n, tier]) => ({
+    id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite`, tier, icon: 'flame' as const,
+  })),
+  ...([[5, 'bronze'], [10, 'silver'], [20, 'gold'], [30, 'platinum']] as const).map(([n, tier]) => ({
+    id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}`, tier, icon: 'chevrons' as const,
+  })),
+  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine', tier: 'bronze', icon: 'target' },
+  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine', tier: 'silver', icon: 'target' },
+  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt', tier: 'silver', icon: 'comeback' },
 ]
 
 const TITLES: [number, string][] = [[30, 'Légende'], [25, 'Élite'], [20, 'Expert'], [15, 'Assidu'], [10, 'Confirmé'], [5, 'Régulier'], [1, 'Débutant']]

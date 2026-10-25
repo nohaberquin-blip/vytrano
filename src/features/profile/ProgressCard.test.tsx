@@ -70,3 +70,17 @@ test('partage désactivé : rien n’est publié à l’ouverture', async () => 
   await new Promise((r) => setTimeout(r, 50))
   expect(publishCard).not.toHaveBeenCalled()
 })
+
+test('logos disque de fonte : palier en couleur une fois obtenu, grisé sinon', async () => {
+  await done('a', '2026-09-01')
+  render(<WithUser><ProgressCard /></WithUser>)
+  const card = await screen.findByRole('region', { name: 'Régularité' })
+  const first = await within(card).findByRole('listitem', { name: /1re séance, obtenu le/ })
+  const icon = first.querySelector('svg.badge-icon')!
+  expect(icon).toHaveClass('tier-bronze')
+  expect(icon).not.toHaveClass('locked')
+  expect(icon.querySelector('[data-icon="dumbbell"]')).toBeInTheDocument()
+  const gold = within(card).getByRole('listitem', { name: /^100 séances, à débloquer/ }).querySelector('svg.badge-icon')!
+  expect(gold).toHaveClass('tier-gold', 'locked')
+  expect(card.querySelectorAll('svg.badge-icon')).toHaveLength(17)
+})

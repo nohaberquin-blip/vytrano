@@ -309,11 +309,25 @@ a { color: inherit; }
 .progress-streak { gap: 14px; margin: 8px 0 4px; font-weight: 650; }
 .badges { list-style: none; padding: 0; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
 .badge {
-  display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 48px; padding: 6px 8px; border-radius: 12px;
-  border: 1px dashed var(--line); color: var(--muted); font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 8px 4px; border-radius: 12px;
+  border: 1px solid transparent; color: var(--muted); font-size: 12px; line-height: 1.25;
 }
-.badge.on { border: 1px solid transparent; background: var(--accent); color: var(--accent-ink); }
+.badge.on { border-color: var(--line); background: var(--surface); color: var(--text); }
 .badge-label { font-weight: 650; }
-.badge-sub { opacity: 0.8; }
+.badge-sub { color: var(--muted); }
+
+/* Logos « disque de fonte » : bord et pictogramme à la couleur du palier. */
+.badge-icon { flex: none; --rim: #b4b2a9; --glyph: #edebe4; }
+.badge-icon.tier-bronze { --rim: #c77d3a; --glyph: #f0b27a; }
+.badge-icon.tier-silver { --rim: #b4b2a9; --glyph: #edebe4; }
+.badge-icon.tier-gold { --rim: #ef9f27; --glyph: #fac775; }
+.badge-icon.tier-platinum { --rim: #5dcaa5; --glyph: #cff3e6; }
+.badge-plate { fill: #2c2c2a; }
+.badge-rim { stroke: var(--rim); }
+.badge-groove { stroke: #5f5e5a; }
+.badge-glyph { fill: var(--glyph); stroke: var(--glyph); stroke-width: 0; }
+.badge-glyph-fill { fill: var(--glyph); }
+.badge-icon.locked { filter: grayscale(1); opacity: 0.35; }
 .session-streak { margin-left: 8px; font-weight: 650; color: var(--text); }
+.gain-badge { display: inline-flex; align-items: center; gap: 6px; }
 .gain { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }

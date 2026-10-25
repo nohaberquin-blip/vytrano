@@ -5,6 +5,7 @@ import { toISODate } from '../../domain/calendar'
 import { BADGES } from '../../domain/streak'
 import { useAuth, useUserId } from '../auth/AuthProvider'
 import { fmtInt } from './numberField'
+import { BadgeIcon } from './BadgeIcon'
 
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
@@ -52,6 +53,7 @@ export function ProgressCard() {
           return (
             <li key={b.id} className={date ? 'badge on' : 'badge'}
               aria-label={date ? `${b.label}, obtenu le ${shortDate(date)}` : `${b.label}, à débloquer : ${b.hint}`}>
+              <BadgeIcon icon={b.icon} tier={b.tier} locked={!date} />
               <span className="badge-label">{b.label}</span>
               {date && <span className="badge-sub small">{shortDate(date)}</span>}
             </li>
