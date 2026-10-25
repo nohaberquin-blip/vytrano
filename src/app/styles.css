@@ -343,3 +343,4 @@ a { color: inherit; }
 .record-line { margin: 2px 0; font-weight: 650; }
 .records-link { margin: 0 0 16px; }
 .progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
+.records-section { margin-top: 24px; }

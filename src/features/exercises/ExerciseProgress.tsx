@@ -23,7 +23,7 @@ export function ExerciseProgress({ exerciseId }: { exerciseId: string }) {
 
   return (
     <>
-      <section aria-label="Records">
+      <section className="records-section" aria-label="Records">
         <h2>Records</h2>
         <p className="record-line num">Charge max {show(r.weight.value)} · {longDate(r.weight.date)}</p>
         <p className="record-line num">1RM estimé {show(r.e1rm.value)} · {longDate(r.e1rm.date)}</p>
