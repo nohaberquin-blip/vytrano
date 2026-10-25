@@ -1,5 +1,6 @@
+import { challengeProgress } from '../domain/challenges'
 import { monthEnd, monthStart, type MonthData } from '../domain/month'
-import type { Challenge } from '../domain/types'
+import type { Challenge, Workout } from '../domain/types'
 import { loadCalendarInput, stableId } from './calendar'
 import { db } from './db'
 import { historyByExercise } from './records'
@@ -39,4 +40,23 @@ export async function loadMonthData(userId: string, today: string): Promise<Mont
     historyByExercise(userId),
   ])
   return { today, workouts, input, challenges, history }
+}
+
+/** Défis que la séance en cours fait réussir (comptée comme terminée, ses séries ajoutées si elle n'est pas allégée). */
+export async function challengesCompletedBy(userId: string, workout: Workout, today: string): Promise<Challenge[]> {
+  const data = await loadMonthData(userId, today)
+  const defis = data.challenges.filter((c) => c.kind !== 'month')
+  if (defis.length === 0) return []
+  const done = { ...workout, status: 'done' as const }
+  const history = new Map(data.history)
+  if (!(await db.workout_lightenings.get(workout.id))) {
+    const sets = await db.workout_sets.where('workout_id').equals(workout.id).toArray()
+    for (const exerciseId of new Set(sets.map((s) => s.exercise_id))) {
+      history.set(exerciseId, [...(history.get(exerciseId) ?? []), { workout: done, sets: sets.filter((s) => s.exercise_id === exerciseId) }])
+    }
+  }
+  const workouts = [...data.workouts.filter((w) => w.id !== workout.id), done]
+  return defis.filter((c) =>
+    challengeProgress(c, data.workouts, data.history, today).status !== 'done'
+    && challengeProgress(c, workouts, history, today).status === 'done')
 }

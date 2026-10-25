@@ -54,3 +54,18 @@ test('une erreur dans le récapitulatif des records n’empêche pas de terminer
   expect(await screen.findByText(/Séance enregistrée/)).toBeInTheDocument()
   expect((await db.workouts.toArray()).filter((w) => w.status === 'in_progress')).toHaveLength(0)
 })
+
+test('fin de séance : « 🎯 Défi réussi » pour un défi atteint par la séance', async () => {
+  const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  await db.challenges.bulkPut([
+    { id: 'c1', user_id: 'u', kind: 'sessions', exercise_id: null, metric: null, target: 1, start: day(new Date()), end_date: '2099-12-31' },
+    { id: 'c2', user_id: 'u', kind: 'lift', exercise_id: 'squat', metric: 'weight', target: 105, start: day(new Date()), end_date: '2099-12-31' },
+  ])
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: 'Commencer' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 1' }))
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  await userEvent.click(screen.getByRole('button', { name: 'Terminer la séance' }))
+  expect(await screen.findByText('🎯 Défi réussi : Faire 1 séance')).toBeInTheDocument()
+  expect(screen.getByText('🎯 Défi réussi : Squat à 105 kg')).toBeInTheDocument()
+})

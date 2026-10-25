@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { loadCalendarInput } from '../../data/calendar'
 import { isFemale, listPeriods } from '../../data/cycle'
+import { loadMonthData } from '../../data/challenges'
+import { Challenges, MonthHeader } from './MonthPanel'
 import { db } from '../../data/db'
 import { getActiveProgram } from '../../data/programs'
 import { useLive } from '../../data/useLive'
@@ -38,13 +40,14 @@ export function CalendarPage() {
     return map
   }, [userId])
   // Règles : seulement pour un profil « Femme » (null sinon).
+  const month = useLive(() => loadMonthData(userId, today), [userId, today])
   const periods = useLive(async () => (await isFemale(userId)) ? listPeriods(userId) : null, [userId])
   const [view, setView] = useState<View>(readView)
   const [cursor, setCursor] = useState(today)
   const [editing, setEditing] = useState(false)
   const [picked, setPicked] = useState<CalendarDay | null>(null)
 
-  if (input === undefined || exercises === undefined || periods === undefined) return null
+  if (input === undefined || exercises === undefined || periods === undefined || month === undefined) return null
   if (input === null || editing) {
     return (
       <section className="page">
@@ -88,6 +91,7 @@ export function CalendarPage() {
         <button type="button" aria-pressed={view === 'month'} onClick={() => switchView('month')}>Mois</button>
         <button type="button" aria-pressed={view === 'week'} onClick={() => switchView('week')}>Semaine</button>
       </div>
+      {view === 'month' && <MonthHeader ym={cursor.slice(0, 7)} data={month} />}
       {view === 'month'
         ? <MonthView month={cursor.slice(0, 7)} cal={cal} input={input} periods={periods} onPick={setPicked} />
         : <WeekView monday={from} cal={cal} input={input} exercises={exercises} periods={periods} onPick={setPicked} />}
@@ -96,6 +100,7 @@ export function CalendarPage() {
           <span className="period-mark" aria-hidden /> Règles <span className="period-mark predicted" aria-hidden /> Règles prévues
         </p>
       )}
+      {view === 'month' && <Challenges data={month} />}
       {picked && <DaySheet day={picked} input={input} exercises={exercises} periods={periods} onClose={() => setPicked(null)} />}
     </section>
   )
