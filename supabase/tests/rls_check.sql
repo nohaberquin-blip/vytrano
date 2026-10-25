@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010, 011 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 → 012 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -295,6 +295,53 @@ do $$ begin
     insert into periods (id, user_id, start, days) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', '2026-12-01', 5);
     raise exception 'ÉCHEC : B ne doit pas écrire les règles de A';
   exception when insufficient_privilege then null; end;
+end $$;
+
+-- ─── Régularité : carte visible par les amis seulement, écrite par soi seulement ───
+select set_config('role', 'postgres', true);
+do $$ begin
+  if (select share_progress from public.profiles where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : le partage de la progression doit être désactivé par défaut'; end if;
+end $$;
+insert into public.progress_cards (user_id, level, title, streak, badges)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 4, 'Débutant', 6, '{sessions-1,sessions-10}');
+-- A ne partage pas (encore) : sa carte, même présente, est invisible et il ne peut pas l'écrire.
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : sans partage, B ne doit pas voir la carte de A'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$ begin
+  begin
+    update progress_cards set streak = 7 where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+    raise exception 'ÉCHEC : sans partage, A ne doit pas pouvoir republier sa carte';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('role', 'postgres', true);
+update public.profiles set share_progress = true where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if not exists (select 1 from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B (ami) doit voir la carte de A'; end if;
+  update progress_cards set level = 99 where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if (select level from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') <> 4 then
+    raise exception 'ÉCHEC : B ne doit pas modifier la carte de A'; end if;
+  begin
+    insert into progress_cards (user_id, level, title, streak) values ('cccccccc-0000-0000-0000-000000000003', 1, 'Débutant', 0);
+    raise exception 'ÉCHEC : B ne doit pas écrire la carte de C';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.is_friend('aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000003');
+    raise exception 'ÉCHEC : is_friend ne doit pas être appelable';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-000000000003","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : C (pas ami) ne doit pas voir la carte de A'; end if;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───

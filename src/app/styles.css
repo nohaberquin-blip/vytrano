@@ -301,3 +301,19 @@ a { color: inherit; }
 .star { font-size: 20px; color: var(--muted); }
 .star.on { color: var(--carbs); }
 .time-field .row .input { max-width: 120px; }
+
+/* Régularité */
+.progress-level { margin: 4px 0 8px; }
+.xp-bar { height: 10px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.xp-bar span { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.progress-streak { gap: 14px; margin: 8px 0 4px; font-weight: 650; }
+.badges { list-style: none; padding: 0; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.badge {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 48px; padding: 6px 8px; border-radius: 12px;
+  border: 1px dashed var(--line); color: var(--muted); font-size: 13px;
+}
+.badge.on { border: 1px solid transparent; background: var(--accent); color: var(--accent-ink); }
+.badge-label { font-weight: 650; }
+.badge-sub { opacity: 0.8; }
+.session-streak { margin-left: 8px; font-weight: 650; color: var(--text); }
+.gain { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }

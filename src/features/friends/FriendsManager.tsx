@@ -3,6 +3,8 @@ import type { Profile } from '../../domain/types'
 import {
   listFriendships, removeFriend, respondRequest, searchProfiles, sendRequest,
 } from '../../data/social'
+import { fetchFriendCards, type ProgressCard } from '../../data/progress'
+import { BADGES } from '../../domain/streak'
 import { useUserId } from '../auth/AuthProvider'
 import { Avatar } from './FeedItem'
 
@@ -14,11 +16,14 @@ export function FriendsManager({ onChange }: { onChange(): void }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Profile[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [cards, setCards] = useState<Map<string, ProgressCard>>(new Map())
 
   const reload = useCallback(async () => {
     try {
-      setLists(await listFriendships(userId))
+      const next = await listFriendships(userId)
+      setLists(next)
       setError(null)
+      setCards(await fetchFriendCards(next.friends.map((f) => f.other.user_id)))
     } catch {
       setError('Pas de connexion.')
     }
@@ -98,12 +103,32 @@ export function FriendsManager({ onChange }: { onChange(): void }) {
       <ul className="list">
         {lists?.friends.map((f) => (
           <li key={f.id} className="list-item" style={{ cursor: 'default' }}>
-            <span className="row"><Avatar name={f.other.username} />{f.other.username}</span>
+            <span className="row"><Avatar name={f.other.username} />
+              <span>
+                {f.other.username}
+                <FriendProgress card={cards.get(f.other.user_id)} />
+              </span>
+            </span>
             <button className="btn ghost small" style={{ color: 'var(--danger)' }}
               onClick={() => confirm(`Retirer ${f.other.username} de tes amis ?`) && act(removeFriend(f.id))}>Retirer</button>
           </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+/** Résumé d'un ami qui partage sa progression (rien sinon). */
+function FriendProgress({ card }: { card: ProgressCard | undefined }) {
+  if (!card) return null
+  const label = (id: string) => BADGES.find((b) => b.id === id)?.label
+  const last = card.badges.slice(-3).map(label).filter(Boolean)
+  return (
+    <>
+      <br /><span className="muted small">Niv. {card.level} · {card.title}{card.streak > 0 ? ` · 🔥 ${card.streak}` : ''}</span>
+      {card.badges.length > 0 && (
+        <><br /><span className="muted small">{card.badges.length} badge{card.badges.length > 1 ? 's' : ''} · {last.join(', ')}</span></>
+      )}
+    </>
   )
 }
