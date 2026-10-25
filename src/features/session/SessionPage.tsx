@@ -143,7 +143,7 @@ function GainLines({ gain }: { gain: Gain }) {
       {gain.xp > 0 && <strong>+{gain.xp} XP</strong>}
       {gain.level && <strong>Niveau {gain.level} atteint !</strong>}
       {gain.badges.map((b) => (
-        <span key={b.id} className="gain-badge"><BadgeIcon icon={b.icon} tier={b.tier} size={22} />Nouveau badge : {b.label}</span>
+        <span key={b.id} className="gain-badge"><BadgeIcon icon={b.icon} kg={b.kg} size={22} />Nouveau badge : {b.label}</span>
       ))}
     </span>
   )

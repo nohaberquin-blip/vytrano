@@ -316,17 +316,20 @@ a { color: inherit; }
 .badge-label { font-weight: 650; }
 .badge-sub { color: var(--muted); }
 
-/* Logos « disque de fonte » : bord et pictogramme à la couleur du palier. */
-.badge-icon { flex: none; --rim: #b4b2a9; --glyph: #edebe4; }
-.badge-icon.tier-bronze { --rim: #c77d3a; --glyph: #f0b27a; }
-.badge-icon.tier-silver { --rim: #b4b2a9; --glyph: #edebe4; }
-.badge-icon.tier-gold { --rim: #ef9f27; --glyph: #fac775; }
-.badge-icon.tier-platinum { --rim: #5dcaa5; --glyph: #cff3e6; }
-.badge-plate { fill: #2c2c2a; }
-.badge-rim { stroke: var(--rim); }
-.badge-groove { stroke: #5f5e5a; }
-.badge-glyph { fill: var(--glyph); stroke: var(--glyph); stroke-width: 0; }
-.badge-glyph-fill { fill: var(--glyph); }
+/* Badges en disques de compétition : couleur officielle selon le poids, poids gravé. */
+.badge-icon { flex: none; --plate: #f4f4f2; --ink: #2c2c2a; --lip: rgba(0, 0, 0, 0.18); }
+.badge-icon.kg-5 { --plate: #f4f4f2; --ink: #2c2c2a; }
+.badge-icon.kg-10 { --plate: #2e9e4f; --ink: #ffffff; }
+.badge-icon.kg-15 { --plate: #f2c230; --ink: #3d2e05; }
+.badge-icon.kg-20 { --plate: #1f5fbf; --ink: #ffffff; }
+.badge-icon.kg-25 { --plate: #d62f2f; --ink: #ffffff; }
+.badge-plate { fill: var(--plate); stroke: rgba(0, 0, 0, 0.25); stroke-width: 1; }
+.badge-lip { stroke: var(--lip); }
+.badge-hub { fill: #c9c7c0; stroke: #888780; stroke-width: 1; }
+.badge-hole { fill: #2c2c2a; }
+.badge-glyph { fill: var(--ink); stroke: var(--ink); stroke-width: 0; }
+.badge-glyph-fill { fill: var(--ink); }
+.badge-kg { fill: var(--ink); font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em; }
 .badge-icon.locked { filter: grayscale(1); opacity: 0.35; }
 .session-streak { margin-left: 8px; font-weight: 650; color: var(--text); }
 .gain-badge { display: inline-flex; align-items: center; gap: 6px; }

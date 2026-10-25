@@ -1,4 +1,4 @@
-import type { BadgeIcon as Icon, BadgeTier } from '../../domain/streak'
+import type { BadgeIcon as Icon, BadgeKg } from '../../domain/streak'
 
 /** Pictogramme de musculation au centre du disque. */
 function Glyph({ icon }: { icon: Icon }) {
@@ -41,16 +41,21 @@ function Glyph({ icon }: { icon: Icon }) {
   }
 }
 
-/** Badge en disque de fonte : bord couleur du palier (bronze, argent, or, platine), grisé tant qu'il n'est pas obtenu. */
-export function BadgeIcon({ icon, tier, locked = false, size = 44 }: { icon: Icon; tier: BadgeTier; locked?: boolean; size?: number }) {
+/**
+ * Badge en disque de compétition : couleur et poids gravé selon la rareté
+ * (5 kg blanc, 10 vert, 15 jaune, 20 bleu, 25 rouge), grisé tant qu'il n'est pas obtenu.
+ */
+export function BadgeIcon({ icon, kg, locked = false, size = 58 }: { icon: Icon; kg: BadgeKg; locked?: boolean; size?: number }) {
   return (
-    <svg className={`badge-icon tier-${tier}${locked ? ' locked' : ''}`} viewBox="-26 -26 52 52" width={size} height={size} aria-hidden="true">
-      <circle r="24" className="badge-plate" />
-      <circle r="21.5" className="badge-rim" fill="none" strokeWidth="4" />
-      <circle r="17" className="badge-groove" fill="none" strokeWidth="1" />
-      <g className="badge-glyph">
+    <svg className={`badge-icon kg-${kg}${locked ? ' locked' : ''}`} viewBox="-26 -26 52 52" width={size} height={size} aria-hidden="true">
+      <circle r="25" className="badge-plate" />
+      <circle r="21" className="badge-lip" fill="none" strokeWidth="1" />
+      <circle r="6.5" className="badge-hub" />
+      <circle r="2.6" className="badge-hole" />
+      <g className="badge-glyph" transform="translate(0 -14) scale(0.55)">
         <Glyph icon={icon} />
       </g>
+      <text className="badge-kg" y="19.5" textAnchor="middle">{kg} kg</text>
     </svg>
   )
 }

@@ -1,27 +1,28 @@
 import { addDays, weekGoal, weekStart, workoutDate, type CalendarInput } from './calendar'
 import type { Workout } from './types'
 
-export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum'
+/** Poids du disque (couleurs des disques de compétition) : plus le badge est rare, plus il est lourd. */
+export type BadgeKg = 5 | 10 | 15 | 20 | 25
 export type BadgeIcon = 'dumbbell' | 'flame' | 'chevrons' | 'target' | 'comeback'
-export interface Badge { id: string; label: string; hint: string; tier: BadgeTier; icon: BadgeIcon }
+export interface Badge { id: string; label: string; hint: string; kg: BadgeKg; icon: BadgeIcon }
 
 const count = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
-/** Catalogue, dans l'ordre d'affichage ; le palier donne la couleur du disque. */
+/** Catalogue, dans l'ordre d'affichage. */
 export const BADGES: Badge[] = [
-  ...([[1, 'bronze'], [10, 'bronze'], [50, 'silver'], [100, 'gold'], [250, 'gold'], [500, 'platinum']] as const).map(([n, tier]) => ({
+  ...([[1, 5], [10, 10], [50, 15], [100, 20], [250, 20], [500, 25]] as const).map(([n, kg]) => ({
     id: `sessions-${n}`, label: n === 1 ? '1re séance' : `${n} séances`, hint: count(n, 'Terminer une séance', `Terminer ${n} séances`),
-    tier, icon: 'dumbbell' as const,
+    kg, icon: 'dumbbell' as const,
   })),
-  ...([[4, 'bronze'], [12, 'silver'], [26, 'gold'], [52, 'platinum']] as const).map(([n, tier]) => ({
-    id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite`, tier, icon: 'flame' as const,
+  ...([[4, 10], [12, 15], [26, 20], [52, 25]] as const).map(([n, kg]) => ({
+    id: `streak-${n}`, label: `${n} semaines de suite`, hint: `Réussir ${n} semaines de suite`, kg, icon: 'flame' as const,
   })),
-  ...([[5, 'bronze'], [10, 'silver'], [20, 'gold'], [30, 'platinum']] as const).map(([n, tier]) => ({
-    id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}`, tier, icon: 'chevrons' as const,
+  ...([[5, 10], [10, 15], [20, 20], [30, 25]] as const).map(([n, kg]) => ({
+    id: `level-${n}`, label: `Niveau ${n}`, hint: `Atteindre le niveau ${n}`, kg, icon: 'chevrons' as const,
   })),
-  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine', tier: 'bronze', icon: 'target' },
-  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine', tier: 'silver', icon: 'target' },
-  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt', tier: 'silver', icon: 'comeback' },
+  { id: 'goal-1', label: 'Premier objectif atteint', hint: 'Atteindre son objectif de la semaine', kg: 5, icon: 'target' },
+  { id: 'goal-10', label: '10 objectifs atteints', hint: 'Atteindre 10 fois son objectif de la semaine', kg: 15, icon: 'target' },
+  { id: 'comeback', label: 'Le retour', hint: 'Reprendre après au moins 3 semaines d’arrêt', kg: 10, icon: 'comeback' },
 ]
 
 const TITLES: [number, string][] = [[30, 'Légende'], [25, 'Élite'], [20, 'Expert'], [15, 'Assidu'], [10, 'Confirmé'], [5, 'Régulier'], [1, 'Débutant']]

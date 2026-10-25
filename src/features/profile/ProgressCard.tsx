@@ -53,7 +53,7 @@ export function ProgressCard() {
           return (
             <li key={b.id} className={date ? 'badge on' : 'badge'}
               aria-label={date ? `${b.label}, obtenu le ${shortDate(date)}` : `${b.label}, à débloquer : ${b.hint}`}>
-              <BadgeIcon icon={b.icon} tier={b.tier} locked={!date} />
+              <BadgeIcon icon={b.icon} kg={b.kg} locked={!date} />
               <span className="badge-label">{b.label}</span>
               {date && <span className="badge-sub small">{shortDate(date)}</span>}
             </li>
