@@ -37,7 +37,9 @@ export function RecordsPage() {
               <span>
                 <strong>{r.name}</strong><br />
                 <span className="small num">Charge max {show(r.weight.value)} · 1RM estimé {show(r.e1rm.value)}</span><br />
-                <span className="muted small">Dernier record : {longDate(r.lastRecord)}</span>
+                <span className="muted small">
+                  {r.lastRecord ? `Dernier record : ${longDate(r.lastRecord)}` : `Première séance : ${longDate(r.weight.date)}`}
+                </span>
               </span>
               <span className="muted">›</span>
             </button>

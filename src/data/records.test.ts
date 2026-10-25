@@ -41,3 +41,20 @@ test('mes records : par exercice, le plus récent record en haut ; séances all�
     ['Développé couché', 85, '2026-09-08'],
   ])
 })
+
+test('pendant la séance, seules les séries des exercices de la séance sont lues', async () => {
+  await workout('a', '2026-09-01', [['squat', 100, 5], ['bench', 80, 5]])
+  await workout('cur', '2026-09-08', [['squat', 105, 5]], 'in_progress')
+  const where = vi.spyOn(db.workout_sets, 'where')
+  await liveRecords('u', 'cur')
+  const indexes = where.mock.calls.map((c) => c[0])
+  where.mockRestore()
+  expect(indexes).toEqual(['workout_id', 'exercise_id'])
+})
+
+test('exercice fait une seule fois : pas de « dernier record »', async () => {
+  await workout('a', '2026-09-01', [['squat', 100, 5]])
+  const [r] = await allRecords('u')
+  expect(r.lastRecord).toBeNull()
+  expect(r.sortDate).toBe('2026-09-01')
+})

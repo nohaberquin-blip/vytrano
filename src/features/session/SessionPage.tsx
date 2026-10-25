@@ -261,7 +261,9 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     const before = await loadProgress(userId, today)
     const after = await loadProgress(userId, today, workout)
     // Posés avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
-    storeGain({ ...progressGain(before, after), records: await sessionRecordSummary(userId, workout.id) })
+    // Un souci dans le calcul des records ne doit jamais empêcher de terminer la séance.
+    const records = await sessionRecordSummary(userId, workout.id).catch(() => [])
+    storeGain({ ...progressGain(before, after), records })
     sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)

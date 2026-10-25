@@ -43,3 +43,11 @@ test('liste triée par dernier record ; toucher un exercice ouvre sa fiche', asy
   await userEvent.click(rows[0])
   expect(await screen.findByRole('dialog', { name: 'Squat' })).toBeInTheDocument()
 })
+
+test('exercice fait une seule fois : « Première séance » plutôt qu’un faux dernier record', async () => {
+  await db.exercises.put({ id: 'squat', owner_id: null, name: 'Squat', muscle_group: 'Jambes' })
+  await session('a', '2026-09-01', [['squat', 100, 5]])
+  renderPage()
+  expect(await screen.findByText(/Première séance : 1 sept\. 2026/)).toBeInTheDocument()
+  expect(screen.queryByText(/Dernier record/)).not.toBeInTheDocument()
+})

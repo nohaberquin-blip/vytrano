@@ -22,18 +22,39 @@ async function historyByExercise(userId: string): Promise<Map<string, SessionSet
   ]))
 }
 
+/**
+ * Historique des exercices donnés seulement (séances terminées, non allégées, chronologique) :
+ * part de l'index des exercices, pour ne pas relire tout l'historique à chaque frappe pendant la séance.
+ */
+async function historyOf(userId: string, exerciseIds: string[]): Promise<Map<string, SessionSets[]>> {
+  const sets = await db.workout_sets.where('exercise_id').anyOf(exerciseIds).toArray()
+  const ids = [...new Set(sets.map((s) => s.workout_id))]
+  const [workouts, lights] = await Promise.all([db.workouts.bulkGet(ids), db.workout_lightenings.bulkGet(ids)])
+  const light = new Set(lights.filter((l) => l).map((l) => l!.id))
+  const kept = new Map(workouts.filter((w): w is Workout => !!w && w.user_id === userId && w.status === 'done' && !light.has(w.id)).map((w) => [w.id, w]))
+  const out = new Map<string, SessionSets[]>()
+  for (const exerciseId of exerciseIds) {
+    const byWorkout = new Map<string, WorkoutSet[]>()
+    for (const s of sets) if (s.exercise_id === exerciseId && kept.has(s.workout_id)) byWorkout.set(s.workout_id, [...(byWorkout.get(s.workout_id) ?? []), s])
+    out.set(exerciseId, [...byWorkout].map(([wid, list]) => ({ workout: kept.get(wid)!, sets: list })).sort(byStart))
+  }
+  return out
+}
+
 /** Historique d'un exercice (séances terminées, non allégées), dans l'ordre chronologique. */
 export async function historyFor(userId: string, exerciseId: string): Promise<SessionSets[]> {
-  return (await historyByExercise(userId)).get(exerciseId) ?? []
+  return (await historyOf(userId, [exerciseId])).get(exerciseId) ?? []
 }
 
 /** Records battus dans la séance en cours, série par série (aucun pour une séance allégée). */
 export async function liveRecords(userId: string, workoutId: string): Promise<Map<string, RecordKind[]>> {
   if (await db.workout_lightenings.get(workoutId)) return new Map()
   const current = await db.workout_sets.where('workout_id').equals(workoutId).toArray()
-  const history = await historyByExercise(userId)
+  const exerciseIds = [...new Set(current.map((s) => s.exercise_id))]
+  if (exerciseIds.length === 0) return new Map()
+  const history = await historyOf(userId, exerciseIds)
   const out = new Map<string, RecordKind[]>()
-  for (const exerciseId of new Set(current.map((s) => s.exercise_id))) {
+  for (const exerciseId of exerciseIds) {
     const previous = (history.get(exerciseId) ?? []).filter((h) => h.workout.id !== workoutId)
     for (const [id, kinds] of setRecords(previous, current.filter((s) => s.exercise_id === exerciseId))) out.set(id, kinds)
   }
@@ -61,7 +82,8 @@ export async function sessionRecordSummary(userId: string, workoutId: string): P
   return list
 }
 
-export interface ExerciseRecord { exerciseId: string; name: string; weight: Best; e1rm: Best; lastRecord: string }
+/** `lastRecord` : date du dernier record battu (null si aucun encore) ; `sortDate` : pour le tri. */
+export interface ExerciseRecord { exerciseId: string; name: string; weight: Best; e1rm: Best; lastRecord: string | null; sortDate: string }
 
 /** Tous les records, par exercice, du plus récent au plus ancien. */
 export async function allRecords(userId: string): Promise<ExerciseRecord[]> {
@@ -69,10 +91,10 @@ export async function allRecords(userId: string): Promise<ExerciseRecord[]> {
   for (const [exerciseId, history] of await historyByExercise(userId)) {
     const r = exerciseRecords(history)
     if (!r.weight || !r.e1rm) continue
-    const latest = [r.lastRecord, r.weight.date, r.e1rm.date].filter((d): d is string => !!d).sort().at(-1)!
-    out.push({ exerciseId, name: '', weight: r.weight, e1rm: r.e1rm, lastRecord: latest })
+    const sortDate = [r.lastRecord, r.weight.date, r.e1rm.date].filter((d): d is string => !!d).sort().at(-1)!
+    out.push({ exerciseId, name: '', weight: r.weight, e1rm: r.e1rm, lastRecord: r.lastRecord, sortDate })
   }
   const names = await db.exercises.bulkGet(out.map((r) => r.exerciseId))
   out.forEach((r, i) => { r.name = names[i]?.name ?? '…' })
-  return out.sort((a, b) => b.lastRecord.localeCompare(a.lastRecord))
+  return out.sort((a, b) => b.sortDate.localeCompare(a.sortDate))
 }

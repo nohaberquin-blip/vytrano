@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { db } from '../../data/db'
 import { addDay, addDayExercise, createProgram } from '../../data/programs'
 import { WithUser } from '../../test/auth'
+import * as records from '../../data/records'
 import { SessionPage } from './SessionPage'
 import { GlobalRestBar, RestProvider } from './RestProvider'
 
@@ -42,4 +43,14 @@ test('valider une série record : mention et vibration ; dévalider la retire ; 
   await userEvent.click(screen.getByRole('button', { name: 'Terminer la séance' }))
   const banner = await screen.findByText(/🏆 1 record/)
   expect(banner).toHaveTextContent('🏆 1 record : Squat (charge max 105 kg, 1RM estimé 122,5 kg)')
+})
+
+test('une erreur dans le récapitulatif des records n’empêche pas de terminer la séance', async () => {
+  vi.spyOn(records, 'sessionRecordSummary').mockRejectedValueOnce(new Error('boom'))
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: 'Commencer' }))
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  await userEvent.click(await screen.findByRole('button', { name: 'Terminer la séance' }))
+  expect(await screen.findByText(/Séance enregistrée/)).toBeInTheDocument()
+  expect((await db.workouts.toArray()).filter((w) => w.status === 'in_progress')).toHaveLength(0)
 })
