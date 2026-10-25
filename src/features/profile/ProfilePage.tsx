@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { db } from '../../data/db'
 import { updateProfile } from '../../data/profile'
 import { supabase } from '../../data/supabase'
@@ -41,6 +42,7 @@ export function ProfilePage() {
     <section className="page">
       <h1>{profile?.username ?? 'Profil'}</h1>
       <ProgressCard />
+      <Link className="btn block records-link" to="/records">🏆 Mes records</Link>
       <NeedsCard />
       <WeightCard />
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUnit } from '../../app/units'
 import { db } from '../../data/db'
@@ -13,6 +13,7 @@ import { buildCalendar, toISODate } from '../../domain/calendar'
 import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
 import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
 import { loadProgress, publishCard, refreshCard } from '../../data/progress'
+import { liveRecords, sessionRecordSummary, type RecordSummary } from '../../data/records'
 import { progressGain } from '../../domain/streak'
 import { useAuth } from '../auth/AuthProvider'
 import { periodState } from '../../domain/cycle'
@@ -127,7 +128,7 @@ function NextWorkout() {
 }
 
 const GAIN_KEY = 'muscu.gain'
-type Gain = ReturnType<typeof progressGain>
+type Gain = ReturnType<typeof progressGain> & { records?: RecordSummary[] }
 
 /** Gain de la séance qui vient d'être terminée, pour le bandeau de l'écran suivant. */
 function storeGain(gain: Gain) {
@@ -137,11 +138,22 @@ function readGain(): Gain | null {
   try { const raw = sessionStorage.getItem(GAIN_KEY); return raw ? JSON.parse(raw) as Gain : null } catch { return null }
 }
 
+/** « 🏆 2 records : Squat (charge max 105 kg), Développé couché (1RM estimé 85 kg) » */
+function RecordLine({ records }: { records: RecordSummary[] }) {
+  const { show } = useUnit()
+  const parts = records.map((r) => `${r.name} (${[
+    r.kinds.includes('weight') && `charge max ${show(r.weight)}`,
+    r.kinds.includes('e1rm') && `1RM estimé ${show(r.e1rm)}`,
+  ].filter(Boolean).join(', ')})`)
+  return <strong className="gain-records">🏆 {records.length} record{records.length > 1 ? 's' : ''} : {parts.join(', ')}</strong>
+}
+
 function GainLines({ gain }: { gain: Gain }) {
   return (
     <span className="gain">
       {gain.xp > 0 && <strong>+{gain.xp} XP</strong>}
       {gain.level && <strong>Niveau {gain.level} atteint !</strong>}
+      {gain.records && gain.records.length > 0 && <RecordLine records={gain.records} />}
       {gain.badges.map((b) => (
         <span key={b.id} className="gain-badge"><BadgeIcon icon={b.icon} kg={b.kg} size={22} />Nouveau badge : {b.label}</span>
       ))}
@@ -181,6 +193,16 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
   const { profile } = useAuth()
   const minutes = useElapsed(workout.started_at)
   const lightened = useLive(() => showsLightened(userId, workout.id), [userId, workout.id])
+  const records = useLive(() => liveRecords(userId, workout.id), [userId, workout.id])
+  // Vibration à l'apparition d'un nouveau record (une fois par série, pas pour ceux déjà là à l'ouverture).
+  const celebrated = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    if (!records) return
+    if (celebrated.current === null) { celebrated.current = new Set(records.keys()); return }
+    const fresh = [...records.keys()].filter((id) => !celebrated.current!.has(id))
+    fresh.forEach((id) => celebrated.current!.add(id))
+    if (fresh.length && readRestSettings().vibrate) navigator.vibrate?.([60, 40, 60])
+  }, [records])
   const exerciseIds = [...new Set(sets.map((s) => s.exercise_id))]
   const meta = useLive(async () => Promise.all(exerciseIds.map(async (id) => ({
     id,
@@ -239,7 +261,9 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     const before = await loadProgress(userId, today)
     const after = await loadProgress(userId, today, workout)
     // Posés avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
-    storeGain(progressGain(before, after))
+    // Un souci dans le calcul des records ne doit jamais empêcher de terminer la séance.
+    const records = await sessionRecordSummary(userId, workout.id).catch(() => [])
+    storeGain({ ...progressGain(before, after), records })
     sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)
@@ -262,7 +286,7 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
       {meta?.map((m) => (
         <ExerciseCard key={m.id} name={m.name} last={m.last} targetWeight={m.fiche?.current_weight}
           methodLabel={methodLabel(m.item, m.fiche)}
-          sets={sets.filter((s) => s.exercise_id === m.id)}
+          sets={sets.filter((s) => s.exercise_id === m.id)} records={records}
           onUpdate={(s) => void update(s)} onAddSet={() => addSet(workout.id, m.id)} />
       ))}
       <button className="btn primary block big" onClick={finish}>Terminer la séance</button>

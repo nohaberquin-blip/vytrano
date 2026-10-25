@@ -334,3 +334,13 @@ a { color: inherit; }
 .session-streak { margin-left: 8px; font-weight: 650; color: var(--text); }
 .gain-badge { display: inline-flex; align-items: center; gap: 6px; }
 .gain { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }
+
+/* Records */
+.record-note { margin: 2px 0 6px; padding: 4px 10px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 650; }
+.gain-records { flex-basis: 100%; }
+.periods.three { grid-template-columns: repeat(3, 1fr); }
+.segmented.metric { margin: 12px 0 0; }
+.record-line { margin: 2px 0; font-weight: 650; }
+.records-link { margin: 0 0 16px; }
+.progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
+.records-section { margin-top: 24px; }

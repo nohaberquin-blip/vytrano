@@ -4,6 +4,7 @@ import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import { WeightInput } from './WeightInput'
 import { ExerciseHistory } from './ExerciseHistory'
+import { ExerciseProgress } from './ExerciseProgress'
 import { MethodEditor } from './MethodEditor'
 import { readTemplate, templateError, type SetTemplate } from '../../domain/methods'
 import { baseRest, formatClock, parseClock } from '../../domain/rest'
@@ -71,6 +72,7 @@ export function ExerciseSheet({ exercise, fiche, save, onClose, onRemove }: {
       <MethodEditor value={template} reference={weight === null ? fiche.current_weight : toKg(weight)}
         rounding={rounding === null ? undefined : toKg(rounding)} onChange={setTemplate} />
       <button className="btn primary block big" disabled={!valid} onClick={submit}>Enregistrer</button>
+      <ExerciseProgress exerciseId={exercise.id} />
       <ExerciseHistory exerciseId={exercise.id} />
       {onRemove && (
         <button className="btn danger block" style={{ marginTop: 16 }} onClick={onRemove}>Retirer de mes exercices</button>
