@@ -1,0 +1,42 @@
+import { monthEnd, monthStart, type MonthData } from '../domain/month'
+import type { Challenge } from '../domain/types'
+import { loadCalendarInput, stableId } from './calendar'
+import { db } from './db'
+import { historyByExercise } from './records'
+import { repo } from './repo'
+
+/** Défis et objectifs de mois modifiés, du plus ancien au plus récent. */
+export async function listChallenges(userId: string): Promise<Challenge[]> {
+  const all = await db.challenges.where('user_id').equals(userId).toArray()
+  return all.sort((a, b) => a.start.localeCompare(b.start) || (a.updated_at ?? '').localeCompare(b.updated_at ?? ''))
+}
+
+/** Nouveau défi, commencé aujourd'hui. */
+export async function createChallenge(userId: string, c: Omit<Challenge, 'id' | 'user_id' | 'start' | 'updated_at'>, today: string): Promise<void> {
+  await repo.put<Challenge>('challenges', { ...c, id: crypto.randomUUID(), user_id: userId, start: today })
+}
+
+export const removeChallenge = (id: string) => repo.remove('challenges', id)
+
+/** Objectif de séances d'un mois (`null` : revenir à la valeur proposée). Une ligne par mois (id fixe). */
+export async function setMonthGoal(userId: string, ym: string, goal: number | null): Promise<void> {
+  const id = stableId('month', userId, ym)
+  if (goal === null) {
+    if (await db.challenges.get(id)) await repo.remove('challenges', id)
+    return
+  }
+  await repo.put<Challenge>('challenges', {
+    id, user_id: userId, kind: 'month', exercise_id: null, metric: null, target: goal, start: monthStart(ym), end_date: monthEnd(ym),
+  })
+}
+
+/** Tout ce qu'il faut pour l'objectif du mois, les défis et les bilans. */
+export async function loadMonthData(userId: string, today: string): Promise<MonthData> {
+  const [workouts, input, challenges, history] = await Promise.all([
+    db.workouts.where('user_id').equals(userId).filter((w) => w.status === 'done').toArray(),
+    loadCalendarInput(userId, today),
+    listChallenges(userId),
+    historyByExercise(userId),
+  ])
+  return { today, workouts, input, challenges, history }
+}
