@@ -338,3 +338,8 @@ a { color: inherit; }
 /* Records */
 .record-note { margin: 2px 0 6px; padding: 4px 10px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 650; }
 .gain-records { flex-basis: 100%; }
+.periods.three { grid-template-columns: repeat(3, 1fr); }
+.segmented.metric { margin: 12px 0 0; }
+.record-line { margin: 2px 0; font-weight: 650; }
+.records-link { margin: 0 0 16px; }
+.progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
