@@ -90,13 +90,17 @@ export function UnitSetting() {
 
 export function UsernameSetting() {
   const { profile } = useAuth()
+  // Rendu seulement une fois le profil chargé ; la clé remet le champ à jour si le pseudo change ailleurs.
+  return profile ? <UsernameForm key={profile.username} profile={profile} /> : null
+}
+
+function UsernameForm({ profile }: { profile: Profile }) {
   const { apply, setError, feedback } = useApply()
-  const [username, setUsername] = useState(profile?.username ?? '')
-  if (!profile) return null
+  const [username, setUsername] = useState(profile.username)
   async function save() {
     const invalid = usernameError(username)
     if (invalid) { setError(invalid); return }
-    if (username !== profile!.username) await apply({ username: username.trim() })
+    if (username !== profile.username) await apply({ username: username.trim() })
   }
   return (
     <div className="field">

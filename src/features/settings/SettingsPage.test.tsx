@@ -5,6 +5,7 @@ import { db } from '../../data/db'
 import { updateProfile } from '../../data/profile'
 import { setShareProgress } from '../../data/progress'
 import { supabase } from '../../data/supabase'
+import { AuthContext } from '../auth/AuthProvider'
 import { WithUser, testProfile } from '../../test/auth'
 import { readRestSettings } from '../session/restSettings'
 import { SettingsPage } from './SettingsPage'
@@ -28,6 +29,11 @@ beforeEach(async () => {
 
 const renderPage = (profile = testProfile) =>
   render(<MemoryRouter><WithUser profile={profile}><SettingsPage /></WithUser></MemoryRouter>)
+
+const authValue = {
+  loading: false, user: { id: 'u' }, profile: testProfile, recovering: false, endRecovery: () => {},
+  refreshProfile: async () => {}, signOut: async () => {},
+}
 
 const CATS = ['Apparence', 'Notifications', 'Confidentialité', 'Préférences d’entraînement', 'Compte']
 
@@ -91,4 +97,26 @@ test('pseudo modifié ; suppression du compte après avoir tapé son pseudo', as
   await userEvent.click(confirmBtn)
   expect(rpc).toHaveBeenCalledWith('delete_my_account')
   rpc.mockRestore()
+})
+
+test('pseudo : le champ se remplit quand le profil arrive après l’ouverture', async () => {
+  const { rerender } = render(<MemoryRouter><AuthContext.Provider value={{ ...authValue, profile: null }}><SettingsPage /></AuthContext.Provider></MemoryRouter>)
+  rerender(<MemoryRouter><AuthContext.Provider value={{ ...authValue, profile: testProfile }}><SettingsPage /></AuthContext.Provider></MemoryRouter>)
+  expect(await screen.findByRole('textbox', { name: 'Pseudo' })).toHaveValue('moi')
+  expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled()
+})
+
+test('partage de la progression activé : le désactiver retire la carte', async () => {
+  renderPage({ ...testProfile, share_progress: true })
+  const toggle = await screen.findByRole('checkbox', { name: 'Montrer mon niveau et mes badges à mes amis' })
+  expect(toggle).toBeChecked()
+  await userEvent.click(toggle)
+  expect(setShareProgress).toHaveBeenCalledWith('u', false, expect.anything())
+})
+
+test('thème : trois choix sur une ligne ; recherche avec l’apostrophe de l’iPhone', async () => {
+  renderPage()
+  expect(screen.getByRole('group', { name: 'Thème' })).toHaveClass('three')
+  await userEvent.type(screen.getByRole('searchbox', { name: 'Rechercher un paramètre' }), 'l’écran')
+  expect(screen.getByRole('checkbox', { name: "Garder l'écran allumé" })).toBeInTheDocument()
 })

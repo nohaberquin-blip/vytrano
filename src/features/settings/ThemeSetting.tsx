@@ -13,7 +13,7 @@ export function ThemeSetting() {
   return (
     <div className="field">
       <span>Thème</span>
-      <div className="segmented" role="group" aria-label="Thème">
+      <div className="segmented three" role="group" aria-label="Thème">
         {CHOICES.map((c) => (
           <button key={c.value} type="button" aria-pressed={theme === c.value}
             onClick={() => { saveTheme(c.value); setTheme(c.value) }}>{c.label}</button>

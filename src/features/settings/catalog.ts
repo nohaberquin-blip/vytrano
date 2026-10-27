@@ -27,8 +27,8 @@ export const SETTINGS: { id: SettingId; category: CategoryId; label: string; key
   { id: 'deleteAccount', category: 'account', label: 'Supprimer mon compte', keywords: ['supprimer', 'effacer', 'compte'] },
 ]
 
-/** Minuscules, sans accents ni espaces autour : « ÉCRAN » et « ecran » se valent. */
-export const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+/** Minuscules, sans accents ni espaces autour, apostrophe courbe (clavier iPhone) redressée : « L’ÉCRAN » et « l'ecran » se valent. */
+export const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’‘]/g, "'").toLowerCase().trim()
 
 /** Réglages dont le nom ou un mot-clé contient la recherche (tous si elle est vide). */
 export function searchSettings(query: string): SettingId[] {

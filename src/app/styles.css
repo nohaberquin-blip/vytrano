@@ -377,5 +377,6 @@ a { color: inherit; }
 
 /* Paramètres */
 .settings-search { margin-bottom: 4px; }
+.segmented.three { grid-template-columns: repeat(3, 1fr); margin: 8px 0 0; }
 .settings-card { display: grid; gap: 12px; }
 .settings-item .switch { margin: 0; }
