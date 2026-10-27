@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { loadProgress, publishCard, refreshCard, setShareProgress } from '../../data/progress'
+import { useEffect } from 'react'
+import { loadProgress, publishCard, refreshCard } from '../../data/progress'
 import { useLive } from '../../data/useLive'
 import { toISODate } from '../../domain/calendar'
 import { BADGES } from '../../domain/streak'
@@ -10,13 +10,11 @@ import { BadgeIcon } from './BadgeIcon'
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
 
-/** Carte « Régularité » du Profil : niveau, XP, série, jokers, badges et partage avec les amis. */
+/** Carte « Régularité » du Profil : niveau, XP, série, jokers, badges (le partage se règle dans Paramètres). */
 export function ProgressCard() {
   const userId = useUserId()
-  const { profile, refreshProfile } = useAuth()
+  const { profile } = useAuth()
   const p = useLive(() => loadProgress(userId, toISODate(new Date())), [userId])
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const sharing = !!profile?.share_progress
   // Partage activé : la carte vue par les amis est remise à jour si elle a changé (série perdue, objectif modifié…).
   useEffect(() => {
@@ -24,14 +22,6 @@ export function ProgressCard() {
   }, [sharing, p, userId])
   if (!p) return null
   const unlocked = new Map(p.badges.map((b) => [b.id, b.date]))
-
-  async function toggle(on: boolean) {
-    setBusy(true); setError(null)
-    const { error } = await setShareProgress(userId, on, p!)
-    if (error) setError('Impossible d’enregistrer. Vérifie ta connexion.')
-    else await refreshProfile()
-    setBusy(false)
-  }
 
   return (
     <section className="card progress-card" aria-label="Régularité">
@@ -60,12 +50,6 @@ export function ProgressCard() {
           )
         })}
       </ul>
-      <label className="switch">
-        <span>Montrer mon niveau et mes badges à mes amis</span>
-        <input type="checkbox" checked={!!profile?.share_progress} disabled={busy} onChange={(e) => toggle(e.target.checked)} />
-      </label>
-      <p className="muted small" style={{ marginTop: 0 }}>Seuls ton niveau, ta série et tes badges sont partagés, jamais le détail de tes séances.</p>
-      {error && <p className="error" role="alert">{error}</p>}
     </section>
   )
 }

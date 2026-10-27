@@ -7,6 +7,8 @@ import { ExercisesPage } from '../features/exercises/ExercisesPage'
 import { FriendsPage } from '../features/friends/FriendsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { RecordsPage } from '../features/records/RecordsPage'
+import { SettingsPage } from '../features/settings/SettingsPage'
+import { HistoryPage } from '../features/history/HistoryPage'
 import { MonthReportAuto } from './MonthReportAuto'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
@@ -28,6 +30,7 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
         <span className="brand">Vytrano</span>
         <div className="topbar-right">
           {headerExtra}
+          <Link to="/parametres" className="topbar-settings" aria-label="Paramètres">⚙️</Link>
           <Link to="/profil" className="topbar-profile" aria-label="Profil">Profil</Link>
         </div>
       </header>
@@ -40,6 +43,8 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
           <Route path="/amis" element={<FriendsPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/records" element={<RecordsPage />} />
+          <Route path="/parametres" element={<SettingsPage />} />
+          <Route path="/historique" element={<HistoryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <MonthReportAuto />

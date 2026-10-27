@@ -35,21 +35,6 @@ test('niveau, barre d’XP et badges (débloqués et grisés), pas de série à 
   expect(within(card).getByRole('listitem', { name: '10 séances, à débloquer : Terminer 10 séances' })).toBeInTheDocument()
 })
 
-test('interrupteur de partage : désactivé par défaut, l’activer partage la carte', async () => {
-  render(<WithUser><ProgressCard /></WithUser>)
-  const toggle = await screen.findByRole('checkbox', { name: 'Montrer mon niveau et mes badges à mes amis' })
-  expect(toggle).not.toBeChecked()
-  await userEvent.click(toggle)
-  expect(setShareProgress).toHaveBeenCalledWith('u', true, expect.objectContaining({ level: 1 }))
-})
-
-test('partage activé : le désactiver retire la carte', async () => {
-  render(<WithUser profile={{ ...testProfile, share_progress: true }}><ProgressCard /></WithUser>)
-  const toggle = await screen.findByRole('checkbox', { name: 'Montrer mon niveau et mes badges à mes amis' })
-  expect(toggle).toBeChecked()
-  await userEvent.click(toggle)
-  expect(setShareProgress).toHaveBeenCalledWith('u', false, expect.anything())
-})
 
 test('partage activé : la carte périmée est republiée à l’ouverture du Profil, une seule fois', async () => {
   await done('a', '2026-09-01')

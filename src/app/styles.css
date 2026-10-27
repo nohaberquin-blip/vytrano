@@ -14,7 +14,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #111315;
     --surface: #1b1e21;
     --surface-2: #25292d;
@@ -27,6 +27,19 @@
     --ok: #4cc47e;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #111315;
+  --surface: #1b1e21;
+  --surface-2: #25292d;
+  --text: #f1f2ee;
+  --muted: #9aa0a6;
+  --line: #2e3337;
+  --accent: #c6f432;
+  --accent-ink: #111315;
+  --danger: #ff6b61;
+  --ok: #4cc47e;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -54,6 +67,7 @@ a { color: inherit; }
 }
 .brand { font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; font-size: 15px; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-settings { text-decoration: none; font-size: 18px; padding: 6px 8px; line-height: 1; }
 .topbar-profile {
   text-decoration: none; font-size: 14px; font-weight: 600;
   padding: 8px 12px; border-radius: 999px; background: var(--surface-2);
@@ -188,7 +202,8 @@ a { color: inherit; }
 
 /* ─── Calendrier ─── */
 :root { --planned: #2f6fd6; --moved: #e08a1e; }
-@media (prefers-color-scheme: dark) { :root { --planned: #6ea2ff; --moved: #f2a54a; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --planned: #6ea2ff; --moved: #f2a54a; } }
+:root[data-theme="dark"] { --planned: #6ea2ff; --moved: #f2a54a; }
 .cal-nav { margin-bottom: 4px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) 36px; gap: 4px; align-items: center; }
 .cal-head { text-align: center; }
@@ -205,7 +220,8 @@ a { color: inherit; }
 .cal-missed .cal-dot { background: var(--danger); }
 .cal-moved .cal-dot { background: var(--moved); }
 :root { --period: #d6457a; }
-@media (prefers-color-scheme: dark) { :root { --period: #ff7aa8; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --period: #ff7aa8; } }
+:root[data-theme="dark"] { --period: #ff7aa8; }
 .period-mark { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--period); flex: none; }
 .period-predicted .period-mark, .period-mark.predicted { opacity: 0.4; }
 .cal-row .period-mark { margin-left: auto; }
@@ -239,7 +255,8 @@ a { color: inherit; }
 
 /* ─── Profil : besoins et poids ─── */
 :root { --protein: #2f6fd6; --carbs: #e0a21e; --fat: #c0504d; }
-@media (prefers-color-scheme: dark) { :root { --protein: #6ea2ff; --carbs: #f2c04a; --fat: #ff7d78; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --protein: #6ea2ff; --carbs: #f2c04a; --fat: #ff7d78; } }
+:root[data-theme="dark"] { --protein: #6ea2ff; --carbs: #f2c04a; --fat: #ff7d78; }
 .needs-kcal { font-size: 26px; margin: 4px 0 0; letter-spacing: -0.01em; }
 .needs-kcal .muted { font-size: 15px; }
 .macro-donut { display: flex; align-items: center; gap: 16px; margin: 10px 0 4px; }
@@ -341,7 +358,6 @@ a { color: inherit; }
 .periods.three { grid-template-columns: repeat(3, 1fr); }
 .segmented.metric { margin: 12px 0 0; }
 .record-line { margin: 2px 0; font-weight: 650; }
-.records-link { margin: 0 0 16px; }
 .progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
 .records-section { margin-top: 24px; }
 
@@ -357,3 +373,18 @@ a { color: inherit; }
 .report-big { font-size: 28px; font-weight: 800; margin: 0; }
 .report-badges { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .report-badges li { display: flex; flex-direction: column; align-items: center; width: 72px; text-align: center; }
+
+/* Paramètres */
+.settings-search { margin-bottom: 4px; }
+.segmented.three { grid-template-columns: repeat(3, 1fr); margin: 8px 0 0; }
+.settings-card { display: grid; gap: 12px; }
+.settings-item .switch { margin: 0; }
+
+/* Profil : stats et historique */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.stats-grid div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stats-grid strong { font-size: 18px; white-space: nowrap; }
+.stats-grid span { overflow-wrap: anywhere; hyphens: auto; }
+.profile-links { margin: 12px 0; }
+.profile-links .btn { text-align: center; text-decoration: none; padding-left: 8px; padding-right: 8px; font-size: 15px; white-space: nowrap; }
+.back-link { display: inline-block; margin-top: 12px; text-decoration: none; font-weight: 600; color: var(--muted); }
