@@ -1,9 +1,10 @@
 import { challengeProgress } from '../domain/challenges'
 import { monthEnd, monthStart, type MonthData } from '../domain/month'
+import type { CalendarInput } from '../domain/calendar'
 import type { Challenge, Workout } from '../domain/types'
 import { loadCalendarInput, stableId } from './calendar'
 import { db } from './db'
-import { historyByExercise } from './records'
+import { historyByExercise, historyOf } from './records'
 import { repo } from './repo'
 
 /** Défis et objectifs de mois modifiés, du plus ancien au plus récent. */
@@ -42,9 +43,22 @@ export async function loadMonthData(userId: string, today: string): Promise<Mont
   return { today, workouts, input, challenges, history }
 }
 
+/**
+ * Comme `loadMonthData`, mais l'historique se limite aux exercices des défis de charge (index des exercices) :
+ * de quoi afficher l'objectif et les défis sans relire toutes les séries à chaque écriture. Le bilan prend `loadMonthData`.
+ * `input` déjà chargé (Calendrier) : ni le calendrier ni les séances ne sont relus.
+ */
+export async function loadMonthSummary(userId: string, today: string, input?: CalendarInput | null): Promise<MonthData> {
+  const [cal, challenges] = await Promise.all([input === undefined ? loadCalendarInput(userId, today) : input, listChallenges(userId)])
+  const workouts = cal?.workouts ?? await db.workouts.where('user_id').equals(userId).filter((w) => w.status === 'done').toArray()
+  const lifts = [...new Set(challenges.filter((c) => c.kind === 'lift').map((c) => c.exercise_id!))]
+  const history = lifts.length > 0 ? await historyOf(userId, lifts) : new Map()
+  return { today, workouts, input: cal, challenges, history }
+}
+
 /** Défis que la séance en cours fait réussir (comptée comme terminée, ses séries ajoutées si elle n'est pas allégée). */
 export async function challengesCompletedBy(userId: string, workout: Workout, today: string): Promise<Challenge[]> {
-  const data = await loadMonthData(userId, today)
+  const data = await loadMonthSummary(userId, today)
   const defis = data.challenges.filter((c) => c.kind !== 'month')
   if (defis.length === 0) return []
   const done = { ...workout, status: 'done' as const }

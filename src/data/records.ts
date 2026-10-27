@@ -26,7 +26,7 @@ export async function historyByExercise(userId: string): Promise<Map<string, Ses
  * Historique des exercices donnés seulement (séances terminées, non allégées, chronologique) :
  * part de l'index des exercices, pour ne pas relire tout l'historique à chaque frappe pendant la séance.
  */
-async function historyOf(userId: string, exerciseIds: string[]): Promise<Map<string, SessionSets[]>> {
+export async function historyOf(userId: string, exerciseIds: string[]): Promise<Map<string, SessionSets[]>> {
   const sets = await db.workout_sets.where('exercise_id').anyOf(exerciseIds).toArray()
   const ids = [...new Set(sets.map((s) => s.workout_id))]
   const [workouts, lights] = await Promise.all([db.workouts.bulkGet(ids), db.workout_lightenings.bulkGet(ids)])
