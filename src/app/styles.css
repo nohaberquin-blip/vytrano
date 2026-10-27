@@ -358,7 +358,6 @@ a { color: inherit; }
 .periods.three { grid-template-columns: repeat(3, 1fr); }
 .segmented.metric { margin: 12px 0 0; }
 .record-line { margin: 2px 0; font-weight: 650; }
-.records-link { margin: 0 0 16px; }
 .progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
 .records-section { margin-top: 24px; }
 
@@ -380,3 +379,11 @@ a { color: inherit; }
 .segmented.three { grid-template-columns: repeat(3, 1fr); margin: 8px 0 0; }
 .settings-card { display: grid; gap: 12px; }
 .settings-item .switch { margin: 0; }
+
+/* Profil : stats et historique */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.stats-grid div { display: flex; flex-direction: column; gap: 2px; }
+.stats-grid strong { font-size: 18px; }
+.profile-links { margin: 12px 0; }
+.profile-links .btn { text-align: center; text-decoration: none; }
+.back-link { display: inline-block; margin-top: 12px; text-decoration: none; font-weight: 600; color: var(--muted); }

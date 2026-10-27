@@ -8,6 +8,7 @@ import { FriendsPage } from '../features/friends/FriendsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { RecordsPage } from '../features/records/RecordsPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { HistoryPage } from '../features/history/HistoryPage'
 import { MonthReportAuto } from './MonthReportAuto'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
@@ -43,6 +44,7 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/records" element={<RecordsPage />} />
           <Route path="/parametres" element={<SettingsPage />} />
+          <Route path="/historique" element={<HistoryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <MonthReportAuto />
