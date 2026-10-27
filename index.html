@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#111315" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>Vytrano</title>
+    <script>
+      // Thème choisi dans Paramètres, posé avant le premier affichage (pas de flash).
+      try { var t = localStorage.getItem('vytrano.theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t) } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
