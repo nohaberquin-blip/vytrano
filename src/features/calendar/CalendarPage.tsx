@@ -54,6 +54,8 @@ export function CalendarPage() {
         <h1>Calendrier</h1>
         <WeekdaysSetup initial={input?.schedule.weekdays ?? []} onDone={() => setEditing(false)}
           onCancel={input ? () => setEditing(false) : undefined} />
+        {/* Sans calendrier : pas d'objectif, mais les défis et le bilan restent accessibles. */}
+        {input === null && <><MonthHeader ym={today.slice(0, 7)} data={month} /><Challenges data={month} /></>}
       </section>
     )
   }

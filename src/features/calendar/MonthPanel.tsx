@@ -91,7 +91,7 @@ export function Challenges({ data }: { data: MonthData }) {
 
 function NewChallenge({ today, onClose }: { today: string; onClose(): void }) {
   const userId = useUserId()
-  const { unit, toKg } = useUnit()
+  const { unit, toKg, show } = useUnit()
   const [kind, setKind] = useState<'sessions' | 'lift'>('sessions')
   const [count, setCount] = useState('10')
   const [exerciseId, setExerciseId] = useState('')
@@ -147,7 +147,7 @@ function NewChallenge({ today, onClose }: { today: string; onClose(): void }) {
           <label className="field"><span>Charge visée ({unit})</span>
             <input className="input num" type="number" inputMode="decimal" value={kg} onChange={(e) => setKg(e.target.value)} />
           </label>
-          {kgError && <p className="error">Entre 1 et 999 kg</p>}
+          {kgError && <p className="error">{`Entre ${show(1)} et ${show(999)}`}</p>}
         </>
       )}
       <label className="field"><span>Date de fin</span>

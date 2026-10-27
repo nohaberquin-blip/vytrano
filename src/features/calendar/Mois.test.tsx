@@ -5,6 +5,7 @@ import { saveWeekdays } from '../../data/calendar'
 import { db } from '../../data/db'
 import { createProgram, addDay } from '../../data/programs'
 import { WithUser } from '../../test/auth'
+import { UnitContext } from '../../app/units'
 import { CalendarPage } from './CalendarPage'
 
 beforeEach(async () => {
@@ -76,4 +77,26 @@ test('bilan du mois depuis le Calendrier', async () => {
   expect(within(sheet).getByText('Objectif : 13')).toBeInTheDocument()
   expect(within(sheet).getByText('+3 séances par rapport à septembre')).toBeInTheDocument()
   expect(within(sheet).getByText(/Records battus : Squat/)).toBeInTheDocument()
+})
+
+test('calendrier jamais réglé : défis et bilan restent accessibles', async () => {
+  await db.training_schedules.clear()
+  renderPage()
+  await userEvent.click(await screen.findByRole('button', { name: '＋ Nouveau défi' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Nouveau défi' })
+  await userEvent.click(within(sheet).getByRole('button', { name: 'Créer le défi' }))
+  expect(await within(await screen.findByRole('region', { name: 'Mes défis' })).findByText(/^Faire \d+ séances$/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Bilan du mois' }))
+  expect(await screen.findByRole('dialog', { name: 'Ton bilan d’octobre' })).toBeInTheDocument()
+})
+
+test('en livres, l’erreur de charge est donnée en livres', async () => {
+  render(<MemoryRouter><WithUser><UnitContext.Provider value="lb"><CalendarPage /></UnitContext.Provider></WithUser></MemoryRouter>)
+  await userEvent.click(await screen.findByRole('button', { name: '＋ Nouveau défi' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Nouveau défi' })
+  await userEvent.click(within(sheet).getByRole('button', { name: 'Charge' }))
+  const lb = within(sheet).getByRole('spinbutton', { name: 'Charge visée (lb)' })
+  await userEvent.clear(lb)
+  await userEvent.type(lb, '2500')
+  expect(within(sheet).getByText(/^Entre 2,2 lb et 2.202,4 lb$/)).toBeInTheDocument()
 })
