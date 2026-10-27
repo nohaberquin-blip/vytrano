@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom'
 import { loadHistory } from '../../data/stats'
 import { useLive } from '../../data/useLive'
 import { workoutDate } from '../../domain/calendar'
+import { workoutMinutes } from '../../domain/stats'
 import type { Workout } from '../../domain/types'
 import { useUserId } from '../auth/AuthProvider'
 import { monthTitle } from '../calendar/format'
 import { WorkoutSheet } from './WorkoutSheet'
-
-const minutes = (w: Workout) => (w.finished_at ? Math.round((new Date(w.finished_at).getTime() - new Date(w.started_at).getTime()) / 60_000) : 0)
 
 /** Toutes les séances terminées, groupées par mois (mois du début de la séance). */
 export function HistoryPage() {
@@ -39,7 +38,7 @@ export function HistoryPage() {
                       <span className="muted small">
                         {new Date(workout.started_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                         {' · '}{exercises} exercice{exercises > 1 ? 's' : ''}
-                        {' · '}{minutes(workout)} min
+                        {' · '}{workoutMinutes(workout)} min
                       </span>
                     </span>
                     <span className="muted">›</span>

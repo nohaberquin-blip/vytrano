@@ -1,5 +1,5 @@
 import type { Workout, WorkoutSet } from './types'
-import { formatDuration, formatTonnage, globalStats } from './stats'
+import { formatDuration, formatTonnage, globalStats, workoutMinutes } from './stats'
 
 const w = (id: string, start: string, end: string | null): Workout => ({
   id, user_id: 'u', program_day_id: null, name: 'S', started_at: start, finished_at: end, status: 'done',
@@ -30,4 +30,10 @@ test('formats', () => {
   expect(formatTonnage(850, 'kg')).toBe('850 kg')
   expect(formatTonnage(182_500, 'kg')).toBe('182,5 t')
   expect(formatTonnage(12_383, 'lb')).toMatch(/^27.300 lb$/)
+})
+
+test('durée d’une séance : arrondie, 0 sans fin ou si l’horloge a reculé', () => {
+  expect(workoutMinutes(w('a', '2026-10-01T10:00:00Z', '2026-10-01T10:44:40Z'))).toBe(45)
+  expect(workoutMinutes(w('b', '2026-10-01T10:00:00Z', null))).toBe(0)
+  expect(workoutMinutes(w('c', '2026-10-01T10:00:00Z', '2026-10-01T09:57:00Z'))).toBe(0)
 })

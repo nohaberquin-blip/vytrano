@@ -10,7 +10,8 @@ beforeEach(async () => {
 test('nouvel utilisateur : 0 séance, 0 min, 0 kg', async () => {
   render(<WithUser><StatsCard /></WithUser>)
   const card = await screen.findByRole('region', { name: 'Mes stats' })
-  expect(await within(card).findByText('0 séance')).toBeInTheDocument()
+  expect(await within(card).findByText('0')).toBeInTheDocument()
+  expect(within(card).getByText('séance terminée')).toBeInTheDocument()
   expect(within(card).getByText('0 min')).toBeInTheDocument()
   expect(within(card).getByText('0 kg')).toBeInTheDocument()
 })
@@ -22,7 +23,8 @@ test('séances, heures et tonnes', async () => {
   }
   render(<WithUser><StatsCard /></WithUser>)
   const card = await screen.findByRole('region', { name: 'Mes stats' })
-  expect(await within(card).findByText('2 séances')).toBeInTheDocument()
+  expect(await within(card).findByText('2')).toBeInTheDocument()
+  expect(within(card).getByText('séances terminées')).toBeInTheDocument()
   expect(within(card).getByText('2 h')).toBeInTheDocument()
   expect(within(card).getByText('2 t')).toBeInTheDocument()
 })

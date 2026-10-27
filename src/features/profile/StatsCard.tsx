@@ -14,8 +14,8 @@ export function StatsCard() {
       <p className="card-title">Mes stats</p>
       {stats && (
         <div className="stats-grid">
-          <div><strong className="num">{stats.sessions} séance{stats.sessions > 1 ? 's' : ''}</strong><span className="muted small">terminées</span></div>
-          <div><strong className="num">{formatDuration(stats.minutes)}</strong><span className="muted small">d’entraînement</span></div>
+          <div><strong className="num">{stats.sessions}</strong><span className="muted small">{stats.sessions > 1 ? 'séances terminées' : 'séance terminée'}</span></div>
+          <div><strong className="num">{formatDuration(stats.minutes)}</strong><span className="muted small">d’entraîne&shy;ment</span></div>
           <div><strong className="num">{formatTonnage(stats.tonnageKg, unit)}</strong><span className="muted small">soulevés</span></div>
         </div>
       )}

@@ -382,8 +382,9 @@ a { color: inherit; }
 
 /* Profil : stats et historique */
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
-.stats-grid div { display: flex; flex-direction: column; gap: 2px; }
-.stats-grid strong { font-size: 18px; }
+.stats-grid div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stats-grid strong { font-size: 18px; white-space: nowrap; }
+.stats-grid span { overflow-wrap: anywhere; hyphens: auto; }
 .profile-links { margin: 12px 0; }
-.profile-links .btn { text-align: center; text-decoration: none; }
+.profile-links .btn { text-align: center; text-decoration: none; padding-left: 8px; padding-right: 8px; font-size: 15px; white-space: nowrap; }
 .back-link { display: inline-block; margin-top: 12px; text-decoration: none; font-weight: 600; color: var(--muted); }

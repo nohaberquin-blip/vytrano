@@ -1,6 +1,10 @@
 import { setKind } from './methods'
 import type { Unit, Workout, WorkoutSet } from './types'
 
+/** Durée d'une séance en minutes (0 sans fin, ou si l'horloge a reculé entre deux appareils). */
+export const workoutMinutes = (w: Workout) =>
+  w.finished_at ? Math.max(0, Math.round((new Date(w.finished_at).getTime() - new Date(w.started_at).getTime()) / 60_000)) : 0
+
 export interface GlobalStats { sessions: number; minutes: number; tonnageKg: number }
 
 /** Chiffres depuis le début, sur les séances terminées (allégées comprises) ; échauffements hors charge totale. */
