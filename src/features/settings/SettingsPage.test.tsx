@@ -25,7 +25,6 @@ beforeEach(async () => {
   vi.mocked(setShareProgress).mockClear()
   await Promise.all(db.tables.map((t) => t.clear()))
 })
-afterEach(() => vi.restoreAllMocks())
 
 const renderPage = (profile = testProfile) =>
   render(<MemoryRouter><WithUser profile={profile}><SettingsPage /></WithUser></MemoryRouter>)
@@ -91,4 +90,5 @@ test('pseudo modifié ; suppression du compte après avoir tapé son pseudo', as
   await userEvent.type(screen.getByLabelText('Tape ton pseudo pour confirmer'), 'moi')
   await userEvent.click(confirmBtn)
   expect(rpc).toHaveBeenCalledWith('delete_my_account')
+  rpc.mockRestore()
 })
