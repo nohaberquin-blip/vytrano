@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
-import { createChallenge, removeChallenge, setMonthGoal } from '../../data/challenges'
+import { createChallenge, loadMonthData, removeChallenge, setMonthGoal } from '../../data/challenges'
 import { db } from '../../data/db'
 import { useLive } from '../../data/useLive'
 import { addDays, workoutDate } from '../../domain/calendar'
@@ -16,6 +16,13 @@ import { MonthReport } from './MonthReport'
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 
 /** En-tête du mois : objectif de séances (réglable) et bouton du bilan. */
+/** Bilan ouvert depuis le Calendrier : charge alors tout l'historique (records du mois). */
+function FullReport({ ym, today, onClose }: { ym: string; today: string; onClose(): void }) {
+  const userId = useUserId()
+  const data = useLive(() => loadMonthData(userId, today), [userId, today])
+  return data ? <MonthReport ym={ym} data={data} onClose={onClose} /> : null
+}
+
 export function MonthHeader({ ym, data }: { ym: string; data: MonthData }) {
   const userId = useUserId()
   const [editing, setEditing] = useState(false)
@@ -42,7 +49,7 @@ export function MonthHeader({ ym, data }: { ym: string; data: MonthData }) {
         </>
       )}
       {past && <button className="btn block small" style={{ marginTop: 8 }} onClick={() => setReport(true)}>Bilan du mois</button>}
-      {report && <MonthReport ym={ym} data={data} onClose={() => setReport(false)} />}
+      {report && <FullReport ym={ym} today={data.today} onClose={() => setReport(false)} />}
     </div>
   )
 }

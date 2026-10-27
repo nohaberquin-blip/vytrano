@@ -76,7 +76,7 @@ test('bilan du mois depuis le Calendrier', async () => {
   expect(within(sheet).getByText('3 séances')).toBeInTheDocument()
   expect(within(sheet).getByText('Objectif : 13')).toBeInTheDocument()
   expect(within(sheet).getByText('+3 séances par rapport à septembre')).toBeInTheDocument()
-  expect(within(sheet).getByText(/Records battus : Squat/)).toBeInTheDocument()
+  expect(await within(sheet).findByText(/Records battus : Squat/)).toBeInTheDocument()
 })
 
 test('calendrier jamais réglé : défis et bilan restent accessibles', async () => {

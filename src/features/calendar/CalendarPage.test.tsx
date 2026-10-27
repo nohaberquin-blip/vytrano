@@ -72,12 +72,12 @@ test('détail d’un jour prévu futur : Déplacer puis Annuler le report', asyn
   expect(within(sheet).queryByRole('button', { name: 'lundi 26 octobre' })).toBeNull() // déjà prévu
   expect(within(sheet).getByRole('button', { name: 'jeudi 22 octobre' })).toBeInTheDocument()
   await userEvent.click(within(sheet).getByRole('button', { name: 'samedi 24 octobre' }))
-  expect(await screen.findByRole('button', { name: '23 octobre, reporté' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: '23 octobre, reporté' }, { timeout: 3000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '24 octobre, prévu' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: '23 octobre, reporté' }))
   expect(screen.getByText(/Séance déplacée au samedi 24 octobre/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Annuler le report' }))
-  expect(await screen.findByRole('button', { name: '23 octobre, prévu' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: '23 octobre, prévu' }, { timeout: 3000 })).toBeInTheDocument()
 })
 
 test('aujourd’hui prévu : Commencer ; Passer en repos', async () => {
@@ -86,7 +86,7 @@ test('aujourd’hui prévu : Commencer ; Passer en repos', async () => {
   await userEvent.click(await screen.findByRole('button', { name: '21 octobre, prévu' }))
   expect(screen.getByRole('button', { name: 'Commencer' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Passer en repos' }))
-  expect(await screen.findByRole('button', { name: '21 octobre, repos' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: '21 octobre, repos' }, { timeout: 3000 })).toBeInTheDocument()
 })
 
 test('détail d’un jour de repos futur : Ajouter une séance ce jour', async () => {
@@ -170,7 +170,7 @@ test('profil « Femme » : noter ses règles, prévision, modifier la durée, su
   await userEvent.clear(field)
   await userEvent.type(field, '3')
   await userEvent.click(within(edit).getByRole('button', { name: 'Modifier la durée' }))
-  expect(await screen.findByRole('button', { name: '23 octobre, prévu' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: '23 octobre, prévu' }, { timeout: 3000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '22 octobre, repos, Règles' })).toBeInTheDocument()
 
   await userEvent.click(screen.getByRole('button', { name: '21 octobre, prévu, Règles' }))

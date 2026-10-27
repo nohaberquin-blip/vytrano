@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { loadCalendarInput } from '../../data/calendar'
 import { isFemale, listPeriods } from '../../data/cycle'
-import { loadMonthData } from '../../data/challenges'
+import { loadMonthSummary } from '../../data/challenges'
 import { Challenges, MonthHeader } from './MonthPanel'
 import { db } from '../../data/db'
 import { getActiveProgram } from '../../data/programs'
@@ -29,7 +29,11 @@ const monthStart = (date: string) => `${date.slice(0, 7)}-01`
 export function CalendarPage() {
   const userId = useUserId()
   const today = toISODate(new Date())
-  const input = useLive(() => loadCalendarInput(userId, today), [userId, today])
+  // Calendrier et données du mois en une seule lecture réactive (séances lues une fois).
+  const page = useLive(async () => {
+    const input = await loadCalendarInput(userId, today)
+    return { input, month: await loadMonthSummary(userId, today, input) }
+  }, [userId, today])
   const exercises = useLive(async () => {
     const tree = await getActiveProgram(userId)
     const map = new Map<string, string[]>()
@@ -40,14 +44,14 @@ export function CalendarPage() {
     return map
   }, [userId])
   // Règles : seulement pour un profil « Femme » (null sinon).
-  const month = useLive(() => loadMonthData(userId, today), [userId, today])
   const periods = useLive(async () => (await isFemale(userId)) ? listPeriods(userId) : null, [userId])
   const [view, setView] = useState<View>(readView)
   const [cursor, setCursor] = useState(today)
   const [editing, setEditing] = useState(false)
   const [picked, setPicked] = useState<CalendarDay | null>(null)
 
-  if (input === undefined || exercises === undefined || periods === undefined || month === undefined) return null
+  if (page === undefined || exercises === undefined || periods === undefined) return null
+  const { input, month } = page
   if (input === null || editing) {
     return (
       <section className="page">
