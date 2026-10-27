@@ -1,26 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../../data/db'
-import { updateProfile } from '../../data/profile'
-import { supabase } from '../../data/supabase'
-import { useSyncStatus } from '../../data/sync'
 import { useLive } from '../../data/useLive'
 import { setsOf } from '../../data/workouts'
 import { Sheet } from '../../app/Sheet'
 import { useUnit } from '../../app/units'
 import type { Workout } from '../../domain/types'
 import { useAuth, useUserId } from '../auth/AuthProvider'
-import { SettingsSection } from './SettingsSection'
 import { NeedsCard } from './NeedsCard'
 import { WeightCard } from './WeightCard'
 import { ProgressCard } from './ProgressCard'
-import { RestSettingsSection } from './RestSettingsSection'
 import { KIND_LABELS, setKind } from '../../domain/methods'
 
 export function ProfilePage() {
   const userId = useUserId()
-  const { profile, refreshProfile, signOut } = useAuth()
-  const { pending } = useSyncStatus()
+  const { profile } = useAuth()
   const [open, setOpen] = useState<Workout | null>(null)
 
   const history = useLive(async () => {
@@ -31,12 +25,6 @@ export function ProfilePage() {
       return { workout: w, exercises: new Set(sets.map((s) => s.exercise_id)).size }
     }))
   }, [userId])
-
-  async function remove() {
-    const { error } = await supabase.rpc('delete_my_account')
-    if (error) { alert('Suppression impossible. Vérifie ta connexion.'); return }
-    await signOut()
-  }
 
   return (
     <section className="page">
@@ -66,16 +54,6 @@ export function ProfilePage() {
         ))}
       </ul>
 
-      <RestSettingsSection />
-      {profile && (
-        <SettingsSection key={profile.username} profile={profile} pending={pending}
-          update={async (changes) => {
-            const res = await updateProfile(userId, changes)
-            if (!res.error) await refreshProfile()
-            return res
-          }}
-          onSignOut={() => void signOut()} onDelete={remove} />
-      )}
       {open && <MyWorkoutDetail workout={open} onClose={() => setOpen(null)} />}
     </section>
   )
