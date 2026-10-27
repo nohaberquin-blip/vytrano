@@ -5,7 +5,7 @@ import { db } from './db'
 const byStart = (a: SessionSets, b: SessionSets) => a.workout.started_at.localeCompare(b.workout.started_at)
 
 /** Séances terminées et non allégées de l'utilisateur, avec leurs séries groupées par exercice (un seul passage). */
-async function historyByExercise(userId: string): Promise<Map<string, SessionSets[]>> {
+export async function historyByExercise(userId: string): Promise<Map<string, SessionSets[]>> {
   const done = await db.workouts.where('user_id').equals(userId).filter((w) => w.status === 'done').toArray()
   const light = new Set((await db.workout_lightenings.bulkGet(done.map((w) => w.id))).filter((l) => l).map((l) => l!.id))
   const workouts = new Map(done.filter((w) => !light.has(w.id)).map((w) => [w.id, w]))

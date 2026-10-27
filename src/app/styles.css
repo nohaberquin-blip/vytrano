@@ -344,3 +344,16 @@ a { color: inherit; }
 .records-link { margin: 0 0 16px; }
 .progress-chart .dot.record { fill: var(--accent); stroke: var(--text); stroke-width: 1; }
 .records-section { margin-top: 24px; }
+
+/* Le mois */
+.month-header { margin: 12px 0; }
+.month-bar { margin-top: 6px; }
+.challenges { margin-top: 20px; }
+.challenge { display: block; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.challenge.failed { opacity: 0.55; }
+.challenge.done .xp-bar span { background: var(--ok); }
+.challenges details { margin: 8px 0; }
+.report p { margin: 6px 0; }
+.report-big { font-size: 28px; font-weight: 800; margin: 0; }
+.report-badges { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.report-badges li { display: flex; flex-direction: column; align-items: center; width: 72px; text-align: center; }

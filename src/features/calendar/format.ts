@@ -28,3 +28,11 @@ export function weekTitle(monday: string, sunday: string): string {
     ? `${day(monday)} – ${day(sunday)} ${month(sunday)}`
     : `${day(monday)} ${month(monday)} – ${day(sunday)} ${month(sunday)}`
 }
+
+/** « octobre » */
+export const monthName = (ym: string) => fmt(`${ym}-01`, { month: 'long' })
+/** « d’octobre », « de novembre » */
+export const ofMonth = (ym: string) => {
+  const name = monthName(ym)
+  return /^[aeiouyàâéèêëîïôûù]/i.test(name) ? `d’${name}` : `de ${name}`
+}

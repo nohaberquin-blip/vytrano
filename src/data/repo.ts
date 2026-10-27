@@ -54,6 +54,7 @@ const NUMERIC: Partial<Record<SyncedTable, string[]>> = {
   workout_sets: ['weight'],
   body_profiles: ['height_cm', 'protein_per_kg'],
   weight_entries: ['weight_kg'],
+  challenges: ['target'],
 }
 
 /** Ordre parent → enfant : les enfants sont chargés à partir des ids de leurs parents. */
@@ -72,6 +73,7 @@ const PULL_ORDER: Array<{ table: SyncedTable; parent?: SyncedTable }> = [
   { table: 'weight_entries' },
   { table: 'periods' },
   { table: 'workout_lightenings' },
+  { table: 'challenges' },
 ]
 
 /** Recopie les données serveur de l'utilisateur dans la base locale, sans écraser les écritures en attente. */
@@ -113,7 +115,7 @@ const OWNER_COL: Partial<Record<SyncedTable, string>> = {
   user_exercises: 'user_id', programs: 'owner_id', workouts: 'user_id',
   training_schedules: 'user_id', schedule_overrides: 'user_id', weekly_goals: 'user_id',
   body_profiles: 'user_id', weight_entries: 'user_id', periods: 'user_id',
-  workout_lightenings: 'user_id',
+  workout_lightenings: 'user_id', challenges: 'user_id',
 }
 const PARENT_COL: Partial<Record<SyncedTable, string>> = {
   program_days: 'program_id', program_day_exercises: 'day_id', workout_sets: 'workout_id',

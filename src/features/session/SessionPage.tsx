@@ -14,6 +14,8 @@ import type { Lightening, Workout, WorkoutSet } from '../../domain/types'
 import { isFemale, listPeriods, showsLightened } from '../../data/cycle'
 import { loadProgress, publishCard, refreshCard } from '../../data/progress'
 import { liveRecords, sessionRecordSummary, type RecordSummary } from '../../data/records'
+import { challengesCompletedBy } from '../../data/challenges'
+import { challengeTitle } from '../calendar/challengeText'
 import { progressGain } from '../../domain/streak'
 import { useAuth } from '../auth/AuthProvider'
 import { periodState } from '../../domain/cycle'
@@ -128,7 +130,7 @@ function NextWorkout() {
 }
 
 const GAIN_KEY = 'muscu.gain'
-type Gain = ReturnType<typeof progressGain> & { records?: RecordSummary[] }
+type Gain = ReturnType<typeof progressGain> & { records?: RecordSummary[]; challenges?: string[] }
 
 /** Gain de la séance qui vient d'être terminée, pour le bandeau de l'écran suivant. */
 function storeGain(gain: Gain) {
@@ -154,6 +156,7 @@ function GainLines({ gain }: { gain: Gain }) {
       {gain.xp > 0 && <strong>+{gain.xp} XP</strong>}
       {gain.level && <strong>Niveau {gain.level} atteint !</strong>}
       {gain.records && gain.records.length > 0 && <RecordLine records={gain.records} />}
+      {gain.challenges?.map((t) => <strong key={t} className="gain-records">🎯 Défi réussi : {t}</strong>)}
       {gain.badges.map((b) => (
         <span key={b.id} className="gain-badge"><BadgeIcon icon={b.icon} kg={b.kg} size={22} />Nouveau badge : {b.label}</span>
       ))}
@@ -263,7 +266,10 @@ function ActiveWorkout({ workout, sets }: { workout: Workout; sets: WorkoutSet[]
     // Posés avant : l'écran suivant s'affiche dès que la séance passe à « terminée ».
     // Un souci dans le calcul des records ne doit jamais empêcher de terminer la séance.
     const records = await sessionRecordSummary(userId, workout.id).catch(() => [])
-    storeGain({ ...progressGain(before, after), records })
+    const completed = await challengesCompletedBy(userId, workout, today).catch(() => [])
+    const names = await db.exercises.bulkGet(completed.map((c) => c.exercise_id ?? ''))
+    const challenges = completed.map((c, i) => challengeTitle(c, names[i]?.name, show))
+    storeGain({ ...progressGain(before, after), records, challenges })
     sessionStorage.setItem('muscu.finished', (await db.workout_lightenings.get(workout.id)) ? 'light' : '1')
     timer.stop()
     await finishWorkout(workout.id)

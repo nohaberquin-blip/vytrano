@@ -1,4 +1,4 @@
--- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 → 012 et le seed).
+-- Vérification des règles d'accès. À coller dans l'éditeur SQL Supabase APRÈS setup_all.sql (001 → 008, 010 → 013 et le seed).
 -- Crée 3 utilisateurs de test (A, B, C), vérifie les règles, puis les supprime.
 -- Succès : le résultat final affiche « RLS OK ». Échec : une erreur « ÉCHEC : … »
 -- (toute la transaction est alors annulée, rien ne reste en base).
@@ -342,6 +342,35 @@ select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-0000000
 do $$ begin
   if exists (select 1 from progress_cards where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
     raise exception 'ÉCHEC : C (pas ami) ne doit pas voir la carte de A'; end if;
+end $$;
+
+-- ─── Le mois : défis privés, type et dates contrôlés ───
+select set_config('role', 'postgres', true);
+insert into public.challenges (id, user_id, kind, target, start, end_date)
+  values ('aeaeaeae-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'sessions', 12, '2026-10-01', '2026-10-31');
+do $$ begin
+  begin
+    insert into public.challenges (id, user_id, kind, target, start, end_date) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'x', 1, '2026-10-01', '2026-10-31');
+    raise exception 'ÉCHEC : un type de défi inconnu doit être refusé';
+  exception when check_violation then null; end;
+  begin
+    insert into public.challenges (id, user_id, kind, target, start, end_date) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'sessions', 1, '2026-10-10', '2026-10-01');
+    raise exception 'ÉCHEC : une fin avant le début doit être refusée';
+  exception when check_violation then null; end;
+  begin
+    insert into public.challenges (id, user_id, kind, target, start, end_date) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'lift', 100, '2026-10-01', '2026-10-31');
+    raise exception 'ÉCHEC : un défi de charge sans exercice doit être refusé';
+  exception when check_violation then null; end;
+end $$;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if exists (select 1 from challenges where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') then
+    raise exception 'ÉCHEC : B ne doit pas voir les défis de A'; end if;
+  begin
+    insert into challenges (id, user_id, kind, target, start, end_date) values (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 'sessions', 3, '2026-10-01', '2026-10-31');
+    raise exception 'ÉCHEC : B ne doit pas écrire les défis de A';
+  exception when insufficient_privilege then null; end;
 end $$;
 
 -- ─── Suppression du compte de A : son exercice reste, sans propriétaire ───
