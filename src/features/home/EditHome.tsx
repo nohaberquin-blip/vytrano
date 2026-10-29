@@ -1,17 +1,20 @@
 import { Sheet } from '../../app/Sheet'
-import { APPS, COLORS, WIDGETS, appColor, type AppId, type HomeLayout, type IconColor } from '../../domain/home'
+import { APPS, COLORS, SIZES, appColor, appSize, type AppId, type HomeLayout, type IconColor, type TileSize } from '../../domain/home'
 
 export const COLOR_LABELS: Record<IconColor, string> = {
   red: 'Rouge', orange: 'Orange', yellow: 'Jaune', green: 'Vert', teal: 'Turquoise', blue: 'Bleu', indigo: 'Indigo', purple: 'Violet', gray: 'Gris',
 }
 
+export const SIZE_LABELS: Record<TileSize, string> = { small: 'Petite', wide: 'Large', tall: 'Haute', large: 'Grande' }
+
 const labelOf = (id: AppId) => APPS.find((a) => a.id === id)!.label
 
-/** Feuille d'une icône en mode Modifier : place, couleur, masquer. */
-export function AppSheet({ id, layout, visible, onMove, onColor, onHide, onClose }: {
+/** Feuille d'une tuile en mode Modifier : place, taille, couleur, masquer. */
+export function AppSheet({ id, layout, visible, onMove, onSize, onColor, onHide, onClose }: {
   id: AppId; layout: HomeLayout; visible: AppId[]
-  onMove(target: AppId): void; onColor(c: IconColor): void; onHide(): void; onClose(): void
+  onMove(target: AppId): void; onSize(s: TileSize): void; onColor(c: IconColor): void; onHide(): void; onClose(): void
 }) {
+  const size = appSize(layout, id)
   const label = labelOf(id)
   const i = visible.indexOf(id)
   const current = appColor(layout, id)
@@ -20,6 +23,15 @@ export function AppSheet({ id, layout, visible, onMove, onColor, onHide, onClose
       <div className="grid-2 app-move">
         <button className="btn" disabled={i <= 0} aria-label={`Déplacer ${label} vers la gauche`} onClick={() => onMove(visible[i - 1])}>← Avant</button>
         <button className="btn" disabled={i >= visible.length - 1} aria-label={`Déplacer ${label} vers la droite`} onClick={() => onMove(visible[i + 1])}>Après →</button>
+      </div>
+      <p className="muted small">Taille</p>
+      <div className="size-choices">
+        {SIZES.map((sz) => (
+          <button key={sz} className="btn size-choice" aria-label={SIZE_LABELS[sz]} aria-pressed={sz === size} onClick={() => onSize(sz)}>
+            <span className={`size-shape shape-${sz}`} aria-hidden />
+            {SIZE_LABELS[sz]}
+          </button>
+        ))}
       </div>
       <p className="muted small">Couleur</p>
       <div className="color-choices">
@@ -32,22 +44,16 @@ export function AppSheet({ id, layout, visible, onMove, onColor, onHide, onClose
   )
 }
 
-/** Éléments masqués, à réafficher. */
-export function HiddenList({ layout, onShowApp, onShowWidget }: {
-  layout: HomeLayout; onShowApp(id: AppId): void; onShowWidget(id: HomeLayout['widgets'][number]): void
-}) {
-  const items = [
-    ...layout.hiddenWidgets.map((id) => ({ key: id, label: WIDGETS.find((w) => w.id === id)!.label, show: () => onShowWidget(id) })),
-    ...layout.hiddenApps.map((id) => ({ key: id, label: labelOf(id), show: () => onShowApp(id) })),
-  ]
-  if (items.length === 0) return null
+/** Tuiles masquées, à réafficher. */
+export function HiddenList({ layout, onShow }: { layout: HomeLayout; onShow(id: AppId): void }) {
+  if (layout.hiddenApps.length === 0) return null
   return (
     <section className="card home-hidden" aria-label="Masqués">
       <h2 className="card-title">Masqués</h2>
-      {items.map((it) => (
-        <div key={it.key} className="row between">
-          <span>{it.label}</span>
-          <button className="btn" aria-label={`Afficher ${it.label}`} onClick={it.show}>Afficher</button>
+      {layout.hiddenApps.map((id) => (
+        <div key={id} className="row between">
+          <span>{labelOf(id)}</span>
+          <button className="btn" aria-label={`Afficher ${labelOf(id)}`} onClick={() => onShow(id)}>Afficher</button>
         </div>
       ))}
     </section>

@@ -69,3 +69,11 @@ test('bouton flottant : absent sans séance en cours', async () => {
   await new Promise((r) => setTimeout(r, 50))
   expect(screen.queryByRole('link', { name: /Reprendre la séance/ })).not.toBeInTheDocument()
 })
+
+test('bouton flottant : absent sur l’accueil quand la tuile Séances est visible', async () => {
+  await inProgress(5)
+  renderAt('/')
+  await screen.findByText('▶ Reprendre')
+  await new Promise((r) => setTimeout(r, 100))
+  expect(screen.queryByRole('link', { name: /Reprendre la séance/ })).not.toBeInTheDocument()
+})

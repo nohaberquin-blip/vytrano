@@ -2,16 +2,17 @@ import { useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { saveHome } from '../../data/profile'
 import {
-  APPS, DEFAULT_LAYOUT, WIDGETS, appColor, moveApp, moveWidget, readLayout, setAppColor, setAppHidden, setWidgetHidden,
+  APPS, DEFAULT_LAYOUT, appColor, appSize, moveApp, readLayout, setAppColor, setAppHidden, setAppSize,
   type AppId, type HomeLayout,
 } from '../../domain/home'
 import { useAuth, useUserId } from '../auth/AuthProvider'
 import { AppSheet, HiddenList } from './EditHome'
+import { TILE_INFO } from './Tiles'
 import { useIconDrag } from './useIconDrag'
-import { WIDGET_VIEWS } from './Widgets'
 
 const BADGE_OF: Partial<Record<AppId, string>> = { friends: '/amis' }
 
+/** Accueil en bento : tuiles de tailles différentes sur 2 colonnes, avec les infos du moment. */
 export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
   const userId = useUserId()
   const { profile, patchProfile } = useAuth()
@@ -44,14 +45,11 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
   })
 
   const apps = layout.apps.filter((id) => !layout.hiddenApps.includes(id))
-  const widgets = layout.widgets.filter((id) => !layout.hiddenWidgets.includes(id))
 
-  function onAppClick(id: AppId, e: MouseEvent) {
+  function onTileClick(id: AppId, e: MouseEvent) {
     if (drag.consumeClick()) { e.preventDefault(); return }
     if (editing) { e.preventDefault(); setSheet(id) }
   }
-  // En mode Modifier, les widgets ne s'ouvrent pas.
-  const blockLinks = (e: MouseEvent) => { if (editing && (e.target as Element).closest('a')) e.preventDefault() }
 
   return (
     <section className={editing ? 'page home editing' : 'page home'}>
@@ -64,43 +62,25 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
       )}
       {error && <p role="alert" className="error">Accueil non enregistré, réessaie plus tard.</p>}
 
-      <div className="home-widgets" onClickCapture={blockLinks}>
-        {widgets.map((id, i) => {
-          const View = WIDGET_VIEWS[id]
-          const label = WIDGETS.find((w) => w.id === id)!.label
-          return (
-            <div key={id} className="widget-slot">
-              <View />
-              {editing && (
-                <div className="widget-tools">
-                  <button className="btn" aria-label={`Monter ${label}`} disabled={i === 0} onClick={() => update(moveWidget(layout, id, widgets[i - 1]))}>↑</button>
-                  <button className="btn" aria-label={`Descendre ${label}`} disabled={i === widgets.length - 1} onClick={() => update(moveWidget(layout, id, widgets[i + 1]))}>↓</button>
-                  <button className="btn" aria-label={`Masquer ${label}`} onClick={() => update(setWidgetHidden(layout, id, true))}>Masquer</button>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      <ul className="home-grid" aria-label="Applications">
+      <ul className="bento" aria-label="Applications">
         {apps.map((id) => {
           const a = APPS.find((x) => x.id === id)!
           const badge = BADGE_OF[id] ? badges[BADGE_OF[id]!] ?? 0 : 0
+          const Info = TILE_INFO[id]
+          const classes = ['tile', `size-${appSize(layout, id)}`, `c-${appColor(layout, id)}`, drag.dragging === id && 'dragging']
           return (
-            <li key={id} data-app={id} className={drag.dragging === id ? 'dragging' : undefined}>
+            <li key={id} data-app={id} className={classes.filter(Boolean).join(' ')}>
               <Link
-                to={a.to} className="app" draggable={false}
-                aria-label={badge ? `${a.label}, ${badge} demande${badge > 1 ? 's' : ''}` : a.label}
+                to={a.to} className="tile-link" draggable={false}
                 onPointerDown={(e) => drag.onPointerDown(id, e)}
-                onClick={(e) => onAppClick(id, e)}
+                onClick={(e) => onTileClick(id, e)}
                 onContextMenu={(e) => e.preventDefault()}
               >
-                <span className={`app-icon c-${appColor(layout, id)}`} aria-hidden>
-                  {a.emoji}
-                  {badge > 0 && <span className="app-badge">{badge}</span>}
+                <span className="tile-head">
+                  <span className="tile-icon" aria-hidden>{a.emoji}</span>
+                  <span className="tile-label">{a.label}</span>
                 </span>
-                <span className="app-label">{a.label}</span>
+                {Info && <span className="tile-info"><Info badge={badge} /></span>}
               </Link>
             </li>
           )
@@ -108,11 +88,7 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
       </ul>
 
       {editing ? (
-        <HiddenList
-          layout={layout}
-          onShowApp={(id) => update(setAppHidden(layout, id, false))}
-          onShowWidget={(id) => update(setWidgetHidden(layout, id, false))}
-        />
+        <HiddenList layout={layout} onShow={(id) => update(setAppHidden(layout, id, false))} />
       ) : (
         <button className="btn ghost home-edit" onClick={() => setEditing(true)}>Modifier l’accueil</button>
       )}
@@ -121,6 +97,7 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
         <AppSheet
           id={sheet} layout={layout} visible={apps}
           onMove={(target) => update(moveApp(layout, sheet, target))}
+          onSize={(size) => update(setAppSize(layout, sheet, size))}
           onColor={(c) => update(setAppColor(layout, sheet, c))}
           onHide={() => { update(setAppHidden(layout, sheet, true)); setSheet(null) }}
           onClose={() => setSheet(null)}
