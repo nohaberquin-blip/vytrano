@@ -372,3 +372,40 @@ a { color: inherit; }
 .profile-links { margin: 12px 0; }
 .profile-links .btn { text-align: center; text-decoration: none; padding-left: 8px; padding-right: 8px; font-size: 15px; white-space: nowrap; }
 .back-link { display: inline-block; margin-top: 12px; text-decoration: none; font-weight: 600; color: var(--muted); }
+
+/* ─── Accueil ─── */
+.home { padding-top: 4px; }
+.home-widgets { display: grid; gap: 10px; margin-bottom: 20px; }
+.widget {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--text);
+}
+.widget-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.widget-main { font-size: 17px; font-weight: 700; }
+.widget-bar { width: 100%; height: 6px; accent-color: var(--accent); }
+.widget-goals { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 15px; }
+.home-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 8px;
+}
+.app { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--text); }
+.app-icon {
+  position: relative; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px;
+  font-size: 30px; line-height: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.app-label { max-width: 100%; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  background: #ff3b30; color: #fff; font-size: 13px; font-weight: 700; line-height: 22px; text-align: center;
+}
+/* Couleurs fixes : l'emoji reste lisible sur fond plein, en clair comme en sombre. */
+.c-red { background: #ff5f57; }
+.c-orange { background: #ff9f0a; }
+.c-yellow { background: #ffd60a; }
+.c-green { background: #34c759; }
+.c-teal { background: #30c0c6; }
+.c-blue { background: #0a84ff; }
+.c-indigo { background: #5e5ce6; }
+.c-purple { background: #bf5af2; }
+.c-gray { background: #8e8e93; }
+@media (max-width: 360px) { .app-icon { width: 56px; height: 56px; font-size: 26px; } }
