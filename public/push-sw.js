@@ -15,7 +15,10 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-    for (const client of list) if ('focus' in client) return client.focus()
-    return self.clients.openWindow('/')
+    // La fin du repos mène à la Séance (l'accueil est sur « / »).
+    for (const client of list) {
+      if ('focus' in client) return client.focus().then((c) => (c || client).navigate?.('/seance'))
+    }
+    return self.clients.openWindow('/seance')
   }))
 })

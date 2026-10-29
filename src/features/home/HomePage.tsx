@@ -16,7 +16,10 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
   const userId = useUserId()
   const { profile, patchProfile } = useAuth()
   const saved = readLayout(profile?.home)
-  const [draft, setDraft] = useState<HomeLayout | null>(null)
+  const [draft, setDraftState] = useState<HomeLayout | null>(null)
+  // Copie lisible hors rendu : le dépôt enregistre le brouillon sans effet de bord dans un updater React.
+  const draftRef = useRef<HomeLayout | null>(null)
+  const setDraft = (d: HomeLayout | null) => { draftRef.current = d; setDraftState(d) }
   const layout = draft ?? saved
   const [editing, setEditing] = useState(false)
   const [sheet, setSheet] = useState<AppId | null>(null)
@@ -36,8 +39,8 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
   const drag = useIconDrag({
     editing,
     onLongPress: () => setEditing(true),
-    onOver: (id, target) => setDraft((d) => moveApp(d ?? saved, id, target)),
-    onDrop: () => setDraft((d) => { if (d) update(d); return null }),
+    onOver: (id, target) => setDraft(moveApp(draftRef.current ?? saved, id, target)),
+    onDrop: () => { const d = draftRef.current; if (d) update(d) },
   })
 
   const apps = layout.apps.filter((id) => !layout.hiddenApps.includes(id))

@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Profile } from '../../domain/types'
 import { db } from '../../data/db'
-import { cacheProfile, cachedProfile, clearProfileCache, fetchProfile } from '../../data/profile'
+import { cacheProfile, cachedProfile, clearProfileCache, fetchProfile, keepLocalHome } from '../../data/profile'
 import { pull, setCurrentUser } from '../../data/repo'
 import { supabase, urlHashAtStartup } from '../../data/supabase'
 import { createSync, supabaseSyncClient } from '../../data/sync'
@@ -44,13 +44,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe()
   }, [])
 
+  // Disposition de l'accueil modifiée pendant cette session : elle l'emporte sur le profil relu du serveur.
+  const pendingHome = useRef<{ local: unknown }>()
+  const applyFetched = useCallback((p: Profile | null) => {
+    const merged = keepLocalHome(p, pendingHome.current)
+    if (merged && pendingHome.current) cacheProfile(merged)
+    return merged
+  }, [])
+
   const userId = user?.id
   useEffect(() => {
     setCurrentUser(userId ?? null)
+    pendingHome.current = undefined
     if (!userId) { setProfile(null); return }
     const cached = cachedProfile()
     if (cached?.user_id === userId) setProfile(cached)
-    void fetchProfile(userId).then((p) => p && setProfile(p))
+    void fetchProfile(userId).then((p) => p && setProfile(applyFetched(p)))
     const stop = sync.start()
     // On envoie d'abord ce qui attend, puis on récupère l'état du serveur.
     void sync.flush().then(() => pull(userId)).catch(() => { /* hors ligne : le cache local suffit */ })
@@ -58,10 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [userId])
 
   const refreshProfile = useCallback(async () => {
-    if (userId) setProfile(await fetchProfile(userId))
-  }, [userId])
+    if (userId) setProfile(applyFetched(await fetchProfile(userId)))
+  }, [userId, applyFetched])
 
   const patchProfile = useCallback((changes: Partial<Profile>) => {
+    if ('home' in changes) pendingHome.current = { local: changes.home }
     setProfile((p) => {
       if (!p) return p
       const next = { ...p, ...changes }

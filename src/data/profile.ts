@@ -50,6 +50,14 @@ export async function updateProfile(userId: string, changes: Partial<Omit<Profil
   return { error }
 }
 
+/**
+ * Profil relu du serveur, mais avec la disposition de l'accueil modifiée sur cet appareil (`pending`) :
+ * une lecture partie avant l'enregistrement ne doit pas effacer le dernier choix.
+ */
+export function keepLocalHome(p: Profile | null, pending: { local: unknown } | undefined): Profile | null {
+  return p && pending ? { ...p, home: pending.local } : p
+}
+
 /** Disposition de l'accueil, enregistrée sur le profil (réseau requis). */
 export const saveHome = (userId: string, layout: HomeLayout) => updateProfile(userId, { home: layout })
 

@@ -139,3 +139,22 @@ test('appui long sur une icône : passe en mode Modifier sans ouvrir la page', a
   expect(screen.queryByRole('link', { name: 'retour' })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
+
+test('glisser une icône sur une autre : un seul enregistrement, même en StrictMode', async () => {
+  const { StrictMode } = await import('react')
+  render(
+    <StrictMode>
+      <WithUser><MemoryRouter><HomePage /></MemoryRouter></WithUser>
+    </StrictMode>,
+  )
+  await edit()
+  const target = grid().querySelector('[data-app="session"]')!
+  document.elementFromPoint = () => target
+  fireEvent.pointerDown(icon('Amis'), { clientX: 200, clientY: 200, pointerId: 1 })
+  fireEvent.pointerMove(window, { clientX: 20, clientY: 20, pointerId: 1 })
+  fireEvent.pointerUp(window, { clientX: 20, clientY: 20, pointerId: 1 })
+  expect(names()[0]).toBe('Amis')
+  await new Promise((r) => setTimeout(r, 20))
+  expect(saveHome).toHaveBeenCalledTimes(1)
+  expect(lastSaved().apps[0]).toBe('friends')
+})
