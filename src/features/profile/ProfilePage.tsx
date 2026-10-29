@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
-import { NeedsCard } from './NeedsCard'
 import { ProgressCard } from './ProgressCard'
 import { StatsCard } from './StatsCard'
 import { WeightCard } from './WeightCard'
@@ -16,7 +15,6 @@ export function ProfilePage() {
         <Link className="btn" to="/historique">📅 Mon historique</Link>
         <Link className="btn" to="/records">🏆 Mes records</Link>
       </div>
-      <NeedsCard />
       <WeightCard />
     </section>
   )

@@ -1,3 +1,4 @@
+import type { HomeLayout } from '../domain/home'
 import type { Profile } from '../domain/types'
 import { supabase } from './supabase'
 
@@ -27,7 +28,7 @@ export function cachedProfile(): Profile | null {
   }
 }
 
-function cacheProfile(p: Profile | null) {
+export function cacheProfile(p: Profile | null) {
   try {
     if (p) localStorage.setItem(CACHE_KEY, JSON.stringify(p))
     else localStorage.removeItem(CACHE_KEY)
@@ -48,6 +49,17 @@ export async function updateProfile(userId: string, changes: Partial<Omit<Profil
   const { error } = await supabase.from('profiles').update({ ...changes, updated_at: new Date().toISOString() }).eq('user_id', userId)
   return { error }
 }
+
+/**
+ * Profil relu du serveur, mais avec la disposition de l'accueil modifiée sur cet appareil (`pending`) :
+ * une lecture partie avant l'enregistrement ne doit pas effacer le dernier choix.
+ */
+export function keepLocalHome(p: Profile | null, pending: { local: unknown } | undefined): Profile | null {
+  return p && pending ? { ...p, home: pending.local } : p
+}
+
+/** Disposition de l'accueil, enregistrée sur le profil (réseau requis). */
+export const saveHome = (userId: string, layout: HomeLayout) => updateProfile(userId, { home: layout })
 
 export function clearProfileCache() {
   cacheProfile(null)

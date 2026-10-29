@@ -10,6 +10,8 @@ export interface Profile {
   /** Niveau, série et badges visibles par les amis (désactivé par défaut). */
   share_progress?: boolean
   unit: Unit
+  /** Disposition de l'accueil (lue par `readLayout`, qui ignore ce qui est abîmé). */
+  home?: unknown
 }
 
 export interface Exercise {

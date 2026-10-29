@@ -20,9 +20,9 @@ beforeEach(async () => {
 })
 
 test('le repos continue quand on change d’onglet', async () => {
-  render(<WithUser><MemoryRouter><AppRoutes /></MemoryRouter></WithUser>)
+  render(<WithUser><MemoryRouter initialEntries={['/seance']}><AppRoutes /></MemoryRouter></WithUser>)
   await userEvent.click(await screen.findByRole('button', { name: 'Valider la série 1' }))
   expect(await screen.findByRole('timer', { name: 'Repos' })).toHaveTextContent('2:00')
-  await userEvent.click(screen.getByRole('link', { name: 'Programmes' }))
+  await userEvent.click(screen.getByRole('link', { name: '‹ Accueil' }))
   expect(screen.getByRole('timer', { name: 'Repos' })).toBeInTheDocument()
 })

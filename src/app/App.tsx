@@ -1,5 +1,7 @@
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { TabBar } from './TabBar'
+import { SessionFab } from './SessionFab'
+import { HomePage } from '../features/home/HomePage'
+import { NutritionPage } from '../features/nutrition/NutritionPage'
 import { SessionPage } from '../features/session/SessionPage'
 import { ProgramsPage } from '../features/programs/ProgramsPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
@@ -23,20 +25,19 @@ import { useIncomingRequests } from '../features/friends/useIncomingRequests'
 import { GlobalRestBar, RestProvider } from '../features/session/RestProvider'
 
 export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; badges?: Record<string, number> }) {
+  const home = useLocation().pathname === '/'
   return (
     <RestProvider>
     <div className="shell">
       <header className="topbar">
-        <span className="brand">Vytrano</span>
-        <div className="topbar-right">
-          {headerExtra}
-          <Link to="/parametres" className="topbar-settings" aria-label="Paramètres">⚙️</Link>
-          <Link to="/profil" className="topbar-profile" aria-label="Profil">Profil</Link>
-        </div>
+        {home ? <span className="brand">Vytrano</span> : <Link to="/" className="back-home">‹ Accueil</Link>}
+        <div className="topbar-right">{headerExtra}</div>
       </header>
       <main className="content">
         <Routes>
-          <Route path="/" element={<SessionPage />} />
+          <Route path="/" element={<HomePage badges={badges} />} />
+          <Route path="/seance" element={<SessionPage />} />
+          <Route path="/nutrition" element={<NutritionPage />} />
           <Route path="/calendrier" element={<CalendarPage />} />
           <Route path="/programmes" element={<ProgramsPage />} />
           <Route path="/exercices" element={<ExercisesPage />} />
@@ -50,7 +51,7 @@ export function AppRoutes({ headerExtra, badges }: { headerExtra?: ReactNode; ba
         <MonthReportAuto />
       </main>
       <GlobalRestBar />
-      <TabBar badges={badges} />
+      <SessionFab />
     </div>
     </RestProvider>
   )
