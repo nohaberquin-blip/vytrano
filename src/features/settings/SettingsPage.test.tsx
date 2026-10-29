@@ -32,7 +32,7 @@ const renderPage = (profile = testProfile) =>
 
 const authValue = {
   loading: false, user: { id: 'u' }, profile: testProfile, recovering: false, endRecovery: () => {},
-  refreshProfile: async () => {}, signOut: async () => {},
+  refreshProfile: async () => {}, signOut: async () => {}, patchProfile: () => {},
 }
 
 const CATS = ['Apparence', 'Notifications', 'Confidentialité', 'Préférences d’entraînement', 'Compte']

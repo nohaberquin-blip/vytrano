@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Profile } from '../../domain/types'
 import { db } from '../../data/db'
-import { cachedProfile, clearProfileCache, fetchProfile } from '../../data/profile'
+import { cacheProfile, cachedProfile, clearProfileCache, fetchProfile } from '../../data/profile'
 import { pull, setCurrentUser } from '../../data/repo'
 import { supabase, urlHashAtStartup } from '../../data/supabase'
 import { createSync, supabaseSyncClient } from '../../data/sync'
@@ -17,6 +17,8 @@ interface AuthState {
   recovering: boolean
   endRecovery(): void
   refreshProfile(): Promise<void>
+  /** Change le profil tout de suite à l'écran et dans le cache local (l'écriture serveur est à part). */
+  patchProfile(changes: Partial<Profile>): void
   signOut(): Promise<void>
 }
 
@@ -59,6 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (userId) setProfile(await fetchProfile(userId))
   }, [userId])
 
+  const patchProfile = useCallback((changes: Partial<Profile>) => {
+    setProfile((p) => {
+      if (!p) return p
+      const next = { ...p, ...changes }
+      cacheProfile(next)
+      return next
+    })
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     await Promise.all(db.tables.map((t) => t.clear()))
@@ -67,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ loading, user, profile, recovering, endRecovery: () => setRecovering(false), refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ loading, user, profile, recovering, endRecovery: () => setRecovering(false), refreshProfile, patchProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   )

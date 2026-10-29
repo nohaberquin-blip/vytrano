@@ -1,5 +1,5 @@
 -- Installation complète de Vytrano : à coller en une fois dans SQL Editor → New query → Run.
--- Généré à partir de supabase/migrations/001→008, 010 → 013 et supabase/seed_exercises.sql (009 se colle à part, voir docs/SETUP.md).
+-- Généré à partir de supabase/migrations/001→008, 010 → 014 et supabase/seed_exercises.sql (009 se colle à part, voir docs/SETUP.md).
 
 -- 001 — Tables de l'app Muscu
 create extension if not exists pgcrypto;
@@ -733,3 +733,11 @@ alter table public.challenges enable row level security;
 drop policy if exists challenges_own on public.challenges;
 create policy challenges_own on public.challenges for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- 014 — Accueil : disposition personnalisée (ordre, couleurs, éléments masqués).
+-- Rien de sensible : les profils restent lisibles par les connectés comme avant ; taille bornée.
+
+alter table public.profiles add column if not exists home jsonb;
+alter table public.profiles drop constraint if exists profiles_home_size;
+alter table public.profiles add constraint profiles_home_size
+  check (home is null or (jsonb_typeof(home) = 'object' and octet_length(home::text) <= 4096));

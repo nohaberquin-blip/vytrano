@@ -108,11 +108,23 @@ do $$ declare code text; code2 text; begin
   if code2 <> code then raise exception 'ÉCHEC : share_program doit renvoyer le même code'; end if;
   perform set_config('rls.code', code, true);
   update profiles set share_workouts = false where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  update profiles set home = '{"apps":["friends"]}' where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  begin
+    update profiles set home = '["friends"]' where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+    raise exception 'ÉCHEC : un accueil qui n''est pas un objet doit être refusé';
+  exception when check_violation then null; end;
+  begin
+    update profiles set home = jsonb_build_object('x', repeat('a', 5000)) where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+    raise exception 'ÉCHEC : un accueil trop gros doit être refusé';
+  exception when check_violation then null; end;
 end $$;
 
 -- ─── B après que A a coupé le partage ───
 select set_config('request.jwt.claims', '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}', true);
 do $$ begin
+  update profiles set home = '{}' where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if (select home from profiles where user_id = 'aaaaaaaa-0000-0000-0000-000000000001') <> '{"apps":["friends"]}'::jsonb then
+    raise exception 'ÉCHEC : B ne doit pas pouvoir modifier l''accueil de A'; end if;
   if exists (select 1 from workouts where id = 'dddddddd-0000-0000-0000-000000000004') then
     raise exception 'ÉCHEC : B ne doit plus voir la séance de A quand le partage est coupé'; end if;
   if exists (select 1 from workout_sets where workout_id = 'dddddddd-0000-0000-0000-000000000004') then

@@ -2,7 +2,7 @@
 
 1. Dans le projet Supabase, ouvrir **SQL Editor** → **New query**.
 2. Coller et exécuter **en une fois** le contenu de `supabase/setup_all.sql`
-   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `008` puis `010` → `013`).
+   (il regroupe `migrations/001` → `003`, `seed_exercises.sql` puis `migrations/004` → `008` puis `010` → `014`).
    Sur un projet déjà installé, coller seulement les nouveaux fichiers de `supabase/migrations/`.
 3. Exécuter `supabase/tests/rls_check.sql` : le résultat doit afficher **RLS OK**.
 4. **Authentication → Providers → Email** : pour tester vite, désactiver « Confirm email »
