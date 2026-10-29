@@ -3,6 +3,8 @@ import type { AppId } from '../../domain/home'
 
 const LONG_PRESS_MS = 500
 const MOVE_PX = 10
+/** Après un déplacement, le doigt doit encore bouger de cette distance : le bento se réorganise sous un doigt immobile. */
+const SETTLE_PX = 16
 
 /**
  * Appui long (passe en mode Modifier) et glisser-déposer des icônes, au doigt comme à la souris.
@@ -13,7 +15,7 @@ export function useIconDrag({ editing, onLongPress, onOver, onDrop }: {
   editing: boolean; onLongPress(): void; onOver(id: AppId, target: AppId): void; onDrop(): void
 }) {
   const [dragging, setDragging] = useState<AppId | null>(null)
-  const state = useRef<{ id: AppId; x: number; y: number; moved: boolean; timer?: number } | null>(null)
+  const state = useRef<{ id: AppId; x: number; y: number; moved: boolean; timer?: number; settle?: { x: number; y: number } } | null>(null)
   const swallow = useRef(false)
   const cbs = useRef({ onLongPress, onOver, onDrop, editing })
   cbs.current = { onLongPress, onOver, onDrop, editing }
@@ -35,8 +37,12 @@ export function useIconDrag({ editing, onLongPress, onOver, onDrop }: {
     if (!s.moved && Math.hypot(e.clientX - s.x, e.clientY - s.y) < MOVE_PX) return
     if (!cbs.current.editing) { end(); return }
     if (!s.moved) { s.moved = true; window.clearTimeout(s.timer); setDragging(s.id) }
+    if (s.settle && Math.hypot(e.clientX - s.settle.x, e.clientY - s.settle.y) < SETTLE_PX) return
     const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-app]')?.dataset.app as AppId | undefined
-    if (over && over !== s.id) cbs.current.onOver(s.id, over)
+    if (over && over !== s.id) {
+      s.settle = { x: e.clientX, y: e.clientY }
+      cbs.current.onOver(s.id, over)
+    }
   }
   function up() {
     const s = end()

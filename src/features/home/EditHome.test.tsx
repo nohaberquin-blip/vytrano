@@ -32,8 +32,9 @@ function renderHome() {
   )
 }
 const grid = () => screen.getByRole('list', { name: 'Applications' })
-const names = () => within(grid()).getAllByRole('link').map((a) => a.getAttribute('aria-label'))
-const icon = (name: string) => within(grid()).getByRole('link', { name })
+const LABELS: Record<string, string> = { session: 'Séances', calendar: 'Calendrier', nutrition: 'Nutrition', profile: 'Profil', friends: 'Amis', programs: 'Programmes', exercises: 'Exercices', settings: 'Paramètres' }
+const names = () => [...grid().querySelectorAll<HTMLElement>('[data-app]')].map((li) => LABELS[li.dataset.app!])
+const icon = (name: string) => within(grid()).getByRole('link', { name: new RegExp(`^${name}`) })
 const lastSaved = () => vi.mocked(saveHome).mock.calls.at(-1)![1]
 
 async function edit() {
@@ -47,9 +48,9 @@ test('déplacer une icône depuis sa feuille : ordre changé et enregistré', as
   await userEvent.click(icon('Amis'))
   const sheet = screen.getByRole('dialog', { name: 'Amis' })
   await userEvent.click(within(sheet).getByRole('button', { name: 'Déplacer Amis vers la gauche' }))
-  expect(names().slice(3, 6)).toEqual(['Exercices', 'Amis', 'Nutrition'])
+  expect(names().slice(2, 5)).toEqual(['Nutrition', 'Amis', 'Profil'])
   expect(saveHome).toHaveBeenCalledWith('u', expect.objectContaining({ apps: expect.arrayContaining(['friends']) }))
-  expect(lastSaved().apps.indexOf('friends')).toBe(4)
+  expect(lastSaved().apps.indexOf('friends')).toBe(3)
 })
 
 test('en mode Modifier, toucher une icône ne l’ouvre pas', async () => {
@@ -67,7 +68,7 @@ test('couleur d’une icône', async () => {
   const vert = within(screen.getByRole('dialog', { name: 'Séances' })).getByRole('button', { name: 'Vert' })
   await userEvent.click(vert)
   expect(vert).toHaveAttribute('aria-pressed', 'true')
-  expect(icon('Séances').querySelector('.app-icon')).toHaveClass('c-green')
+  expect(grid().querySelector('[data-app="session"]')).toHaveClass('c-green')
   expect(lastSaved().colors).toEqual({ session: 'green' })
 })
 
@@ -84,15 +85,16 @@ test('masquer puis réafficher une icône ; Paramètres ne se masque pas', async
   expect(within(screen.getByRole('dialog', { name: 'Paramètres' })).queryByRole('button', { name: 'Masquer' })).not.toBeInTheDocument()
 })
 
-test('widgets : monter, masquer, réafficher', async () => {
+test('taille d’une tuile', async () => {
   renderHome()
   await edit()
-  await userEvent.click(screen.getByRole('button', { name: 'Monter Calories' }))
-  expect(lastSaved().widgets).toEqual(['next', 'calories', 'progress', 'goals'])
-  await userEvent.click(screen.getByRole('button', { name: 'Masquer Progression' }))
-  expect(screen.queryByRole('button', { name: 'Masquer Progression' })).not.toBeInTheDocument()
-  await userEvent.click(within(screen.getByRole('region', { name: 'Masqués' })).getByRole('button', { name: 'Afficher Progression' }))
-  expect(screen.getByRole('button', { name: 'Masquer Progression' })).toBeInTheDocument()
+  await userEvent.click(icon('Amis'))
+  const large = within(screen.getByRole('dialog', { name: 'Amis' })).getByRole('button', { name: 'Grande' })
+  expect(within(screen.getByRole('dialog', { name: 'Amis' })).getByRole('button', { name: 'Petite' })).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.click(large)
+  expect(large).toHaveAttribute('aria-pressed', 'true')
+  expect(grid().querySelector('[data-app="friends"]')).toHaveClass('size-large')
+  expect(lastSaved().sizes).toEqual({ friends: 'large' })
 })
 
 test('réinitialiser après confirmation', async () => {
@@ -157,4 +159,24 @@ test('glisser une icône sur une autre : un seul enregistrement, même en Strict
   await new Promise((r) => setTimeout(r, 20))
   expect(saveHome).toHaveBeenCalledTimes(1)
   expect(lastSaved().apps[0]).toBe('friends')
+})
+
+test('glisser : une tuile ne repart pas tant que le doigt ne bouge pas (pas de va-et-vient)', async () => {
+  renderHome()
+  await edit()
+  const over = (id: string) => { document.elementFromPoint = () => grid().querySelector(`[data-app="${id}"]`) }
+  over('session')
+  fireEvent(icon('Profil'), new MouseEvent('pointerdown', { clientX: 200, clientY: 300, bubbles: true }))
+  // jsdom n'a pas PointerEvent : un MouseEvent du même nom porte les coordonnées.
+  const move = (x: number, y: number) => fireEvent(window, new MouseEvent('pointermove', { clientX: x, clientY: y }))
+  move(100, 100)
+  expect(names()[0]).toBe('Profil')
+  // Le bento se réorganise : sous le doigt immobile se trouve maintenant une autre tuile.
+  over('calendar')
+  move(102, 101)
+  expect(names()[0]).toBe('Profil')
+  // Le doigt repart : le déplacement reprend.
+  move(140, 160)
+  expect(names().indexOf('Profil')).toBe(names().indexOf('Calendrier') + 1)
+  fireEvent.pointerUp(window, { clientX: 140, clientY: 160, pointerId: 1 })
 })

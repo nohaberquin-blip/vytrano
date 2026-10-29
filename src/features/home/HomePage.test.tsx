@@ -15,33 +15,40 @@ const renderHome = (home?: unknown, badges?: Record<string, number>) => {
   return render(<WithUser profile={profile}><MemoryRouter><HomePage badges={badges} /></MemoryRouter></WithUser>)
 }
 const grid = () => screen.getByRole('list', { name: 'Applications' })
-const names = () => within(grid()).getAllByRole('link').map((a) => a.getAttribute('aria-label'))
+const ids = () => [...grid().querySelectorAll<HTMLElement>('[data-app]')].map((li) => li.dataset.app)
+const tile = (id: string) => grid().querySelector<HTMLElement>(`[data-app="${id}"]`)!
 
-test('8 icônes dans l’ordre par défaut, avec leur nom et leur adresse', () => {
+test('8 tuiles du bento dans l’ordre par défaut, avec leur nom, leur adresse et leur taille', () => {
   renderHome()
-  expect(names()).toEqual(['Séances', 'Calendrier', 'Programmes', 'Exercices', 'Nutrition', 'Amis', 'Profil', 'Paramètres'])
-  const seance = within(grid()).getByRole('link', { name: 'Séances' })
+  expect(ids()).toEqual(['session', 'calendar', 'nutrition', 'profile', 'friends', 'programs', 'exercises', 'settings'])
+  const seance = within(grid()).getByRole('link', { name: /^Séances/ })
   expect(seance).toHaveAttribute('href', '/seance')
-  expect(seance).toHaveTextContent('Séances')
-  expect(seance.querySelector('.app-icon')).toHaveClass('c-orange')
-  expect(within(grid()).getByRole('link', { name: 'Paramètres' })).toHaveAttribute('href', '/parametres')
+  expect(tile('session')).toHaveClass('size-large', 'c-orange')
+  expect(tile('calendar')).toHaveClass('size-tall')
+  expect(tile('profile')).toHaveClass('size-small')
+  expect(tile('settings')).toHaveClass('size-wide')
+  expect(within(grid()).getByRole('link', { name: /^Paramètres/ })).toHaveAttribute('href', '/parametres')
 })
 
-test('disposition du profil : ordre, masqués absents, couleur', () => {
-  renderHome({ apps: ['friends', 'session'], hiddenApps: ['nutrition'], colors: { session: 'green' }, hiddenWidgets: ['progress'] })
-  expect(names()).toEqual(['Amis', 'Séances', 'Calendrier', 'Programmes', 'Exercices', 'Profil', 'Paramètres'])
-  expect(within(grid()).getByRole('link', { name: 'Séances' }).querySelector('.app-icon')).toHaveClass('c-green')
-  expect(screen.queryByRole('link', { name: /^Progression/ })).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: /^Calories/ })).toBeInTheDocument()
+test('disposition du profil : ordre, masquées absentes, couleur, taille', () => {
+  renderHome({ apps: ['friends', 'session'], hiddenApps: ['nutrition'], colors: { session: 'green' }, sizes: { friends: 'large' } })
+  expect(ids()).toEqual(['friends', 'session', 'calendar', 'profile', 'programs', 'exercises', 'settings'])
+  expect(tile('session')).toHaveClass('c-green')
+  expect(tile('friends')).toHaveClass('size-large')
 })
 
 test('disposition abîmée : accueil par défaut', () => {
   renderHome('{pas du json')
-  expect(names()).toHaveLength(8)
+  expect(ids()).toHaveLength(8)
 })
 
-test('badge des demandes d’amis', () => {
+test('demandes d’amis sur la tuile Amis', () => {
   renderHome(undefined, { '/amis': 2 })
-  const amis = within(grid()).getByRole('link', { name: 'Amis, 2 demandes' })
-  expect(amis).toHaveTextContent('2')
+  expect(within(grid()).getByRole('link', { name: /^Amis/ })).toHaveTextContent('2 demandes')
+})
+
+test('plus de widgets séparés', () => {
+  renderHome()
+  expect(screen.queryByText('Objectifs du jour')).not.toBeInTheDocument()
+  expect(screen.queryByText('Prochaine séance')).not.toBeInTheDocument()
 })
