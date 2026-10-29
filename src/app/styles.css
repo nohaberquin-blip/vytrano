@@ -285,7 +285,7 @@ a { color: inherit; }
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 /* Au-dessus de la barre de repos quand elle est là. */
-.shell:has(.rest-bar) .session-fab { bottom: calc(env(safe-area-inset-bottom) + 160px); }
+.shell:has(.rest-bar) .session-fab { bottom: calc(env(safe-area-inset-bottom) + 176px); }
 
 /* ─── Temps disponible ─── */
 .time-link { display: block; margin: 10px auto 0; font-size: 15px; }
@@ -421,9 +421,11 @@ a { color: inherit; }
 .home-grid li.dragging { opacity: 0.55; }
 .home-grid li.dragging .app-icon { animation: none; transform: scale(1.12); }
 @media (prefers-reduced-motion: reduce) { .home.editing .app-icon { animation: none; } }
-.widget-slot { display: grid; gap: 6px; }
+.widget-slot { position: relative; }
 .home.editing .widget { opacity: 0.85; }
-.widget-tools { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; }
+/* Outils compacts dans le coin du widget : la grille reste visible en mode Modifier. */
+.widget-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
+.widget-tools .btn { min-height: 0; height: 30px; padding: 0 10px; font-size: 13px; border-radius: 999px; }
 .home-hidden { margin-top: 20px; display: grid; gap: 8px; }
 .app-move { margin: 4px 0 12px; }
 .color-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 10px; margin-bottom: 16px; }
