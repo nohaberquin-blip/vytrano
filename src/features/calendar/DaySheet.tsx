@@ -37,7 +37,7 @@ export function DaySheet({ day, input, exercises, periods, onClose }: {
 
   async function start() {
     await startWorkout(userId, day.day!)
-    navigate('/')
+    navigate('/seance')
   }
 
   if (moving) {

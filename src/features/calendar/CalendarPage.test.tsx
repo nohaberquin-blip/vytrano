@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { db } from '../../data/db'
 import { saveWeekdays } from '../../data/calendar'
 import { saveBodyProfile } from '../../data/body'
@@ -87,6 +87,17 @@ test('aujourd’hui prévu : Commencer ; Passer en repos', async () => {
   expect(screen.getByRole('button', { name: 'Commencer' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Passer en repos' }))
   expect(await screen.findByRole('button', { name: '21 octobre, repos' }, { timeout: 3000 })).toBeInTheDocument()
+})
+
+test('Commencer ouvre la Séance', async () => {
+  await seed()
+  render(<MemoryRouter initialEntries={['/calendrier']}><WithUser><Routes>
+    <Route path="/calendrier" element={<CalendarPage />} />
+    <Route path="/seance" element={<p>page séance</p>} />
+  </Routes></WithUser></MemoryRouter>)
+  await userEvent.click(await screen.findByRole('button', { name: '21 octobre, prévu' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Commencer' }))
+  expect(await screen.findByText('page séance')).toBeInTheDocument()
 })
 
 test('détail d’un jour de repos futur : Ajouter une séance ce jour', async () => {
