@@ -80,7 +80,7 @@ export function HomePage({ badges = {} }: { badges?: Record<string, number> }) {
                   <span className="tile-icon" aria-hidden>{a.emoji}</span>
                   <span className="tile-label">{a.label}</span>
                 </span>
-                {Info && <span className="tile-info"><Info badge={badge} /></span>}
+                {Info && <div className="tile-info"><Info badge={badge} /></div>}
               </Link>
             </li>
           )

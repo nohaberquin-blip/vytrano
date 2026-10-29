@@ -30,8 +30,9 @@ test('Séances : démarrer la prochaine séance prévue', async () => {
   renderHome()
   const t = await tile('Séances')
   expect(t).toHaveAttribute('href', '/seance')
-  expect(await within(t).findByText('▶ Démarrer')).toBeInTheDocument()
+  expect(await within(t).findByText('Démarrer')).toBeInTheDocument()
   expect(within(t).getByText('Aujourd’hui · Push A')).toBeInTheDocument()
+  expect(t).toHaveAccessibleName('Séances Démarrer Aujourd’hui · Push A')
 })
 
 test('Séances : sans programme', async () => {
@@ -46,7 +47,7 @@ test('Séances : séance en cours → Reprendre', async () => {
   })
   renderHome()
   const t = await tile('Séances')
-  expect(await within(t).findByText('▶ Reprendre')).toBeInTheDocument()
+  expect(await within(t).findByText('Reprendre')).toBeInTheDocument()
   expect(within(t).getByText('32 min')).toBeInTheDocument()
 })
 
@@ -55,7 +56,8 @@ test('Profil : niveau, titre et série', async () => {
   const t = await tile('Profil')
   expect(t).toHaveAttribute('href', '/profil')
   expect(await within(t).findByText(/^Niv\. 1 · /)).toBeInTheDocument()
-  expect(t).toHaveTextContent('🔥 0 semaine')
+  expect(t).toHaveTextContent('0 semaine')
+  expect(t).not.toHaveAccessibleName(/🔥/)
   expect(within(t).getByRole('progressbar')).toBeInTheDocument()
 })
 
@@ -79,8 +81,11 @@ test('Calendrier : séance du jour faite, objectif du mois', async () => {
   renderHome()
   const t = await tile('Calendrier')
   expect(t).toHaveAttribute('href', '/calendrier')
-  expect(await within(t).findByText('✅ Séance du jour')).toBeInTheDocument()
-  expect(within(t).getByText('⬜ 2 / 13 séances en octobre')).toBeInTheDocument()
+  expect(await within(t).findByText('Séance du jour')).toBeInTheDocument()
+  expect(within(t).getByText('2 / 13 séances en octobre')).toBeInTheDocument()
+  // Les emojis ne sont pas lus : « fait » / « à faire » à la place.
+  expect(t).toHaveAccessibleName('Calendrier fait : Séance du jour à faire : 2 / 13 séances en octobre')
+
 })
 
 test('Calendrier : rien de prévu', async () => {

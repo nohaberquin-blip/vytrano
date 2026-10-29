@@ -19,6 +19,9 @@ import { fmtInt } from '../profile/numberField'
 
 const today = () => toISODate(new Date())
 
+/** Emoji décoratif : VoiceOver ne le lit pas (le texte suffit). */
+const Deco = ({ children }: { children: string }) => <span aria-hidden>{children} </span>
+
 /** Minutes écoulées, rafraîchies chaque minute. */
 function useMinutesSince(iso: string | undefined): number {
   const [now, setNow] = useState(() => Date.now())
@@ -40,11 +43,11 @@ function SessionInfo() {
   }, [userId])
   const minutes = useMinutesSince(data?.current?.started_at)
   if (!data) return null
-  if (data.current) return <><span className="tile-main">▶ Reprendre</span><span className="tile-sub">{minutes} min</span></>
+  if (data.current) return <><span className="tile-main"><Deco>▶</Deco>Reprendre</span><span className="tile-sub">{minutes} min</span></>
   if (!data.n) return <span className="tile-sub">Choisis un programme</span>
   return (
     <>
-      <span className="tile-main">▶ Démarrer</span>
+      <span className="tile-main"><Deco>▶</Deco>Démarrer</span>
       <span className="tile-sub">{data.n.date ? `${whenLabel(data.n.date, data.t!)} · ${data.n.day.name}` : data.n.day.name}</span>
     </>
   )
@@ -60,16 +63,21 @@ function CalendarInfo() {
   }, [userId])
   if (!data) return null
   const { g, name, ym } = data
-  const tick = (ok: boolean) => (ok ? '✅' : '⬜')
-  const lines: string[] = []
-  if (g.today) lines.push(`${tick(g.today.done)} Séance du jour`)
-  if (g.month) lines.push(`${tick(g.month.done >= g.month.goal)} ${g.month.done} / ${g.month.goal} séances en ${monthName(ym)}`)
+  const lines: { done: boolean; text: string }[] = []
+  if (g.today) lines.push({ done: g.today.done, text: 'Séance du jour' })
+  if (g.month) lines.push({ done: g.month.done >= g.month.goal, text: `${g.month.done} / ${g.month.goal} séances en ${monthName(ym)}` })
   if (g.challenge) {
     const { c, p } = g.challenge
-    lines.push(`⬜ ${challengeTitle(c, name, show)} : ${c.kind === 'lift' ? `${show(p.value)} / ${show(p.target)}` : `${p.value} / ${p.target}`}`)
+    lines.push({ done: false, text: `${challengeTitle(c, name, show)} : ${c.kind === 'lift' ? `${show(p.value)} / ${show(p.target)}` : `${p.value} / ${p.target}`}` })
   }
   if (lines.length === 0) return <span className="tile-sub">Rien de prévu aujourd’hui</span>
-  return <ul className="tile-lines">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
+  return (
+    <ul className="tile-lines">
+      {lines.map((l) => (
+        <li key={l.text}><Deco>{l.done ? '✅' : '⬜'}</Deco><span className="sr-only">{l.done ? 'fait : ' : 'à faire : '}</span><span>{l.text}</span></li>
+      ))}
+    </ul>
+  )
 }
 
 function NutritionInfo() {
@@ -91,7 +99,7 @@ function ProfileInfo() {
     <>
       <span className="tile-main">Niv. {p.level} · {p.title}</span>
       <progress className="tile-bar" max={p.xpForNext} value={p.xpInLevel} aria-label="XP vers le niveau suivant" />
-      <span className="tile-sub">🔥 {p.streak} semaine{p.streak > 1 ? 's' : ''}</span>
+      <span className="tile-sub"><Deco>🔥</Deco>{p.streak} semaine{p.streak > 1 ? 's' : ''}</span>
     </>
   )
 }

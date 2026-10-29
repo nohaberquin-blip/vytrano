@@ -406,6 +406,11 @@ a { color: inherit; }
 /* Petite tuile : une seule ligne d'info. */
 .size-small .tile-info > :not(:first-child), .size-small .tile-lines li:not(:first-child) { display: none; }
 .size-wide .tile-bar { display: none; }
+/* Tuile large (1 rangée) : nom à gauche, infos à droite, 2 lignes au plus. */
+.size-wide .tile-link { flex-direction: row; align-items: center; gap: 12px; }
+.size-wide .tile-info { margin: 0 0 0 auto; align-items: flex-end; text-align: right; max-width: 60%; }
+.size-wide .tile-lines li:nth-child(n + 3) { display: none; }
+.size-wide .tile-lines li { -webkit-line-clamp: 1; }
 /* Couleurs fixes : lisibles en clair comme en sombre. */
 .c-red { --tile: #ff5f57; }
 .c-orange { --tile: #ff9f0a; }
@@ -424,7 +429,7 @@ a { color: inherit; }
 .home.editing .tile { animation: wiggle 0.3s ease-in-out infinite alternate; }
 .home.editing .bento li:nth-child(2n) { animation-delay: -0.15s; }
 @keyframes wiggle { from { transform: rotate(-0.8deg); } to { transform: rotate(0.8deg); } }
-.bento li.dragging { opacity: 0.55; animation: none; transform: scale(1.03); }
+.home.editing .bento li.dragging { opacity: 0.55; animation: none; transform: scale(1.03); }
 @media (prefers-reduced-motion: reduce) { .home.editing .tile { animation: none; } }
 .home-hidden { margin-top: 20px; display: grid; gap: 8px; }
 .app-move { margin: 4px 0 12px; }

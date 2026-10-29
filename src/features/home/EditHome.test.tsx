@@ -160,3 +160,23 @@ test('glisser une icône sur une autre : un seul enregistrement, même en Strict
   expect(saveHome).toHaveBeenCalledTimes(1)
   expect(lastSaved().apps[0]).toBe('friends')
 })
+
+test('glisser : une tuile ne repart pas tant que le doigt ne bouge pas (pas de va-et-vient)', async () => {
+  renderHome()
+  await edit()
+  const over = (id: string) => { document.elementFromPoint = () => grid().querySelector(`[data-app="${id}"]`) }
+  over('session')
+  fireEvent(icon('Profil'), new MouseEvent('pointerdown', { clientX: 200, clientY: 300, bubbles: true }))
+  // jsdom n'a pas PointerEvent : un MouseEvent du même nom porte les coordonnées.
+  const move = (x: number, y: number) => fireEvent(window, new MouseEvent('pointermove', { clientX: x, clientY: y }))
+  move(100, 100)
+  expect(names()[0]).toBe('Profil')
+  // Le bento se réorganise : sous le doigt immobile se trouve maintenant une autre tuile.
+  over('calendar')
+  move(102, 101)
+  expect(names()[0]).toBe('Profil')
+  // Le doigt repart : le déplacement reprend.
+  move(140, 160)
+  expect(names().indexOf('Profil')).toBe(names().indexOf('Calendrier') + 1)
+  fireEvent.pointerUp(window, { clientX: 140, clientY: 160, pointerId: 1 })
+})
